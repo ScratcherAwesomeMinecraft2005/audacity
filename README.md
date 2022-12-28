@@ -16,9 +16,12 @@
 
 ## About this fork
 
-This is my own custom build of Audacity with a few small changes:
+This is my own custom version of Audacity with a few small changes:
+
 - Increased track view refresh rate (due to a bug in Audacity, this requires playback at a high sample rate to work reliably, such as 384000 Hz)
-- Increased slider ranges for Compressor
+- Extended slider ranges for Compressor
+
+See a full and detailed list of changes [here](https://github.com/ScratcherAwesomeMinecraft2005/audacity/blob/master/CHANGES.md).
 
 ## Users
 
@@ -27,7 +30,7 @@ Help with using Audacity is available at https://audacityteam.org/help
 
 ## Developers
 
-Build instructions are available [here](https://github.com/audacity/audacity/blob/master/BUILDING.md).
+Build instructions are available [here](https://github.com/ScratcherAwesomeMinecraft2005/audacity/blob/master/BUILDING.md).
 
 Additional development resources may be found in the [wiki](https://github.com/audacity/audacity/wiki).
 
