@@ -1,7 +1,7 @@
-[![Audacity](https://forum.audacityteam.org/styles/prosilver/theme/images/Audacity-logo_75px_trans_forum.png)](https://www.audacityteam.org) 
+[![Audacity](https://forum.audacityteam.org/styles/prosilver/theme/images/Audacity-logo_75px_trans_forum.png)](https://www.audacityteam.org)
 =========================
 
-[**Audacity**](https://www.audacityteam.org) is an easy-to-use, multi-track audio editor and recorder for Windows, macOS, GNU/Linux and other operating systems. 
+[**Audacity**](https://www.audacityteam.org) is an easy-to-use, multi-track audio editor and recorder for Windows, macOS, GNU/Linux and other operating systems.
 
 - **Recording** from any real or virtual audio device that is available to the host system.
 - **Export / Import** a wide range of audio formats, extensible with FFmpeg.
@@ -14,12 +14,17 @@
 - **Accessibility** for VI users.
 - **Analysis and visualization** tools to analyze audio or other signal data.
 
+## About this fork
+
+This is my own custom build of Audacity with a few small changes. For now, it's just a higher refresh rate for the track view.
+
 ## Users
 
 For end users, the latest Windows and macOS release version of Audacity is available from the [Audacity website](https://www.audacityteam.org/download/).
 Help with using Audacity is available at https://audacityteam.org/help
 
 ## Developers
+
 Build instructions are available [here](https://github.com/audacity/audacity/blob/master/BUILDING.md).
 
 Additional development resources may be found in the [wiki](https://github.com/audacity/audacity/wiki).
