@@ -133,15 +133,15 @@ private:
    DECLARE_EVENT_TABLE()
 
 static constexpr EffectParameter Threshold{ &EffectCompressor::mThresholdDB,
-   L"Threshold",     -12.0,   -60.0,   -1.0,    1   };
+   L"Threshold",     -12.0,   -145.0,   -1.0,    1   };
 static constexpr EffectParameter NoiseFloor{ &EffectCompressor::mNoiseFloorDB,
-   L"NoiseFloor",    -40.0,   -80.0,   -20.0,   0.2   };
+   L"NoiseFloor",    -40.0,   -145.0,   -20.0,   0.2   };
 static constexpr EffectParameter Ratio{ &EffectCompressor::mRatio,
-   L"Ratio",         2.0,     1.1,     10.0,    10  };
+   L"Ratio",         2.0,     1.1,     100.0,    10  };
 static constexpr EffectParameter AttackTime{ &EffectCompressor::mAttackTime,
-   L"AttackTime",    0.2,     0.1,     5.0,     100 };
+   L"AttackTime",    0.2,     0.0,     5.0,     100 };
 static constexpr EffectParameter ReleaseTime{ &EffectCompressor::mDecayTime,
-   L"ReleaseTime",   1.0,     1.0,     30.0,    10  };
+   L"ReleaseTime",   1.0,     0.001,     30.0,    10  };
 static constexpr EffectParameter Normalize{ &EffectCompressor::mNormalize,
    L"Normalize",     true,    false,   true,    1   };
 static constexpr EffectParameter UsePeak{ &EffectCompressor::mUsePeak,
