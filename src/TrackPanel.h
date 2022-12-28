@@ -54,7 +54,7 @@ struct TrackPanelDrawingContext;
 
 enum class UndoPush : unsigned char;
 
-static constexpr auto  kTimerInterval = std::chrono::milliseconds{50};
+static constexpr auto  kTimerInterval = std::chrono::milliseconds{7};
 
 const int DragThreshold = 3;// Anything over 3 pixels is a drag, else a click.
 
