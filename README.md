@@ -16,7 +16,9 @@
 
 ## About this fork
 
-This is my own custom build of Audacity with a few small changes. For now, it's just a higher refresh rate for the track view.
+This is my own custom build of Audacity with a few small changes:
+- Increased track view refresh rate (due to a bug in Audacity, this requires playback at a high sample rate to work reliably, such as 384000 Hz)
+- Increased slider ranges for Compressor
 
 ## Users
 
