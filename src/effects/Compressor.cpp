@@ -132,7 +132,7 @@ TranslatableString AttackTimeFormat( double value )
 { return XO("%.2f secs").Format( value ); }
 
 TranslatableString DecayTimeFormat( double value )
-{ return XO("%.1f secs").Format( value ); }
+{ return XO("%.2f secs").Format( value ); }
 
 TranslatableString RatioTextFormat( int sliderValue, double value )
 {
