@@ -101,7 +101,7 @@ double GetZoomOfPreset( const AudacityProject &project, int preset )
          result = pixelsPerUnit * 1000.0;
          break;
       case kZoomSamples:
-         result = 44100.0;
+         result = 44100.0 * 5.76;
          break;
       case kZoom4To1:
          result = 44100.0 * 4;
