@@ -8,6 +8,12 @@
   - Note: Requires playback at a high sample rate to work reliably.
   - Warning: Will cause freezes when spectrogram view is used while moving the mouse to different panels.
 
+## Tools
+
+### Zoom
+
+- Samples zoom preset is changed to 1/144th of a second.
+
 ## Effects
 
 ### Compressor
