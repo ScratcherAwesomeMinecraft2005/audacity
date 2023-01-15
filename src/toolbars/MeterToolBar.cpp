@@ -27,8 +27,6 @@
 #include <wx/setup.h> // for wxUSE_* macros
 
 #ifndef WX_PRECOMP
-#include <wx/event.h>
-#include <wx/intl.h>
 #include <wx/tooltip.h>
 #endif
 
@@ -37,7 +35,7 @@
 #include "AllThemeResources.h"
 #include "Decibels.h"
 #include "ToolManager.h"
-#include "../ProjectAudioIO.h"
+#include "ProjectAudioIO.h"
 #include "../widgets/MeterPanel.h"
 
 #if wxUSE_ACCESSIBILITY

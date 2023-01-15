@@ -25,19 +25,17 @@
 #include <wx/choice.h>
 #include <wx/defs.h>
 #include <wx/brush.h>
-#include <wx/image.h>
-#include <wx/intl.h>
 #endif // WX_PRECOMP
 
 #include "Envelope.h"
 
 #include "AllThemeResources.h"
-#include "../AudioIO.h"
+#include "AudioIO.h"
 #include "ImageManipulation.h"
 #include "../KeyboardCapture.h"
 #include "NoteTrack.h"
 #include "Project.h"
-#include "../ProjectAudioIO.h"
+#include "ProjectAudioIO.h"
 #include "../ProjectAudioManager.h"
 #include "Envelope.h"
 #include "ViewInfo.h"

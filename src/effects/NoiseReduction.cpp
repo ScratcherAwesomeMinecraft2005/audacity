@@ -65,12 +65,10 @@
 
 #include <wx/button.h>
 #include <wx/choice.h>
-#include <wx/dialog.h>
 #include <wx/radiobut.h>
 #include <wx/slider.h>
 #include <wx/valtext.h>
 #include <wx/textctrl.h>
-#include <wx/sizer.h>
 
 // SPECTRAL_SELECTION not to affect this effect for now, as there might be no indication that it does.
 // [Discussed and agreed for v2.1 by Steve, Paul, Bill].
@@ -525,10 +523,10 @@ bool EffectNoiseReduction::Settings::PrefsIO(bool read)
 
    static const PrefsTableEntry<Settings, double> doubleTable[] = {
          { &Settings::mNewSensitivity, wxT("Sensitivity"), 6.0 },
-         { &Settings::mNoiseGain, wxT("Gain"), 12.0 },
+         { &Settings::mNoiseGain, wxT("Gain"), 6.0 },
          { &Settings::mAttackTime, wxT("AttackTime"), 0.02 },
          { &Settings::mReleaseTime, wxT("ReleaseTime"), 0.10 },
-         { &Settings::mFreqSmoothingBands, wxT("FreqSmoothing"), 3.0 },
+         { &Settings::mFreqSmoothingBands, wxT("FreqSmoothing"), 6.0 },
 
          // Advanced settings
          { &Settings::mOldSensitivity, wxT("OldSensitivity"), DEFAULT_OLD_SENSITIVITY },

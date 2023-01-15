@@ -31,6 +31,9 @@ set( LIBRARIES
    lib-project-history
    lib-graphics
    lib-audio-graph
+   lib-tags
+   lib-realtime-effects
+   lib-audio-io
 )
 
 if ( ${_OPT}has_networking )

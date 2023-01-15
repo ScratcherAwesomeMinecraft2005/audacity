@@ -1,11 +1,11 @@
-#include "../AudioIO.h"
+#include "AudioIO.h"
 #include "../CommonCommandFlags.h"
 #include "DeviceManager.h"
 #include "../LabelTrack.h"
 #include "../Menus.h"
 #include "Prefs.h"
 #include "Project.h"
-#include "../ProjectAudioIO.h"
+#include "ProjectAudioIO.h"
 #include "../ProjectAudioManager.h"
 #include "../ProjectFileIO.h"
 #include "ProjectHistory.h"
@@ -18,7 +18,6 @@
 #include "../TrackPanel.h"
 #include "../TransportUtilities.h"
 #include "UndoManager.h"
-#include "../WaveClip.h"
 #include "../prefs/RecordingPrefs.h"
 #include "../prefs/TracksPrefs.h"
 #include "../WaveTrack.h"
@@ -26,6 +25,7 @@
 #include "../commands/CommandContext.h"
 #include "../commands/CommandManager.h"
 #include "../toolbars/ControlToolBar.h"
+#include "../toolbars/ToolManager.h"
 #include "../widgets/AudacityMessageBox.h"
 #include "BasicUI.h"
 #include "../widgets/ProgressDialog.h"
@@ -266,21 +266,32 @@ void OnPunchAndRoll(const CommandContext &context)
 
    double newt1 = t1;
    for (const auto &wt : tracks) {
-      sampleCount testSample(floor(t1 * wt->GetRate()));
-      auto clip = wt->GetClipAtSample(testSample);
-      if (!clip)
+      auto rate = wt->GetRate();
+      sampleCount testSample(floor(t1 * rate));
+      auto intervals = wt->GetIntervals();
+      auto pred = [rate](sampleCount testSample){ return
+         [rate, testSample](const Track::Interval &interval){
+            auto start = floor(interval.Start() * rate + 0.5);
+            auto end = floor(interval.End() * rate + 0.5);
+            auto ts = testSample.as_double();
+            return ts >= start && ts < end;
+         };
+      };
+      auto begin = intervals.begin(), end = intervals.end(),
+         iter = std::find_if(begin, end, pred(testSample));
+      if (iter == end)
          // Bug 1890 (an enhancement request)
          // Try again, a little to the left.
          // Subtract 10 to allow a selection exactly at or slightly after the
          // end time
-         clip = wt->GetClipAtSample(testSample - 10);
-      if (!clip)
+         iter = std::find_if(begin, end, pred(testSample - 10));
+      if (iter == end)
          error = true;
       else {
          // May adjust t1 left
          // Let's ignore the possibility of a clip even shorter than the
          // crossfade duration!
-         newt1 = std::min(newt1, clip->GetPlayEndTime() - crossFadeDuration);
+         newt1 = std::min(newt1, iter->End() - crossFadeDuration);
       }
    }
 
@@ -404,7 +415,7 @@ void OnToggleSoundActivated(const CommandContext &WXUNUSED(context) )
    gPrefs->Read(wxT("/AudioIO/SoundActivatedRecord"), &pause, false);
    gPrefs->Write(wxT("/AudioIO/SoundActivatedRecord"), !pause);
    gPrefs->Flush();
-   MenuManager::ModifyAllProjectToolbarMenus();
+   ToolManager::ModifyAllProjectToolbarMenus();
 }
 
 void OnTogglePlayRecording(const CommandContext &WXUNUSED(context) )
@@ -417,7 +428,7 @@ void OnTogglePlayRecording(const CommandContext &WXUNUSED(context) )
 #endif
    gPrefs->Write(wxT("/AudioIO/Duplex"), !Duplex);
    gPrefs->Flush();
-   MenuManager::ModifyAllProjectToolbarMenus();
+   ToolManager::ModifyAllProjectToolbarMenus();
 }
 
 void OnToggleSWPlaythrough(const CommandContext &WXUNUSED(context) )
@@ -426,7 +437,7 @@ void OnToggleSWPlaythrough(const CommandContext &WXUNUSED(context) )
    gPrefs->Read(wxT("/AudioIO/SWPlaythrough"), &SWPlaythrough, false);
    gPrefs->Write(wxT("/AudioIO/SWPlaythrough"), !SWPlaythrough);
    gPrefs->Flush();
-   MenuManager::ModifyAllProjectToolbarMenus();
+   ToolManager::ModifyAllProjectToolbarMenus();
 }
 
 #ifdef EXPERIMENTAL_AUTOMATED_INPUT_LEVEL_ADJUSTMENT
@@ -438,7 +449,7 @@ void OnToggleAutomatedInputLevelAdjustment(
       wxT("/AudioIO/AutomatedInputLevelAdjustment"), &AVEnabled, false);
    gPrefs->Write(wxT("/AudioIO/AutomatedInputLevelAdjustment"), !AVEnabled);
    gPrefs->Flush();
-   MenuManager::ModifyAllProjectToolbarMenus();
+   ToolManager::ModifyAllProjectToolbarMenus();
 }
 #endif
 
