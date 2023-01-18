@@ -18,8 +18,9 @@
 
 This is my own custom, personal use version of Audacity with a few small changes:
 
-- Increased track view refresh rate (due to a bug in Audacity, this requires playback at a high sample rate to work reliably, such as 384000 Hz)
-- Extended slider ranges for Compressor
+- Increased track view refresh rate
+- Extended ranges for some effect parameters
+- And more...
 
 See a full and detailed list of changes [here](https://github.com/ScratcherAwesomeMinecraft2005/audacity/blob/master/CHANGES.md).
 
