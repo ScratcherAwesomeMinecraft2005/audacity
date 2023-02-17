@@ -21,6 +21,7 @@
 
 
 #include "FindClipping.h"
+#include "AnalysisTracks.h"
 #include "LoadEffects.h"
 
 #include <math.h>
@@ -31,7 +32,7 @@
 #include "../widgets/AudacityMessageBox.h"
 
 #include "../LabelTrack.h"
-#include "../WaveTrack.h"
+#include "WaveTrack.h"
 
 const EffectParameterMethods& EffectFindClipping::Parameters() const
 {
@@ -92,9 +93,9 @@ bool EffectFindClipping::Process(EffectInstance &, EffectSettings &)
 
    LabelTrack *lt{};
    if (!clt)
-      addedTrack = (AddAnalysisTrack(name)), lt = addedTrack->get();
+      addedTrack = (AddAnalysisTrack(*this, name)), lt = addedTrack->get();
    else
-      modifiedTrack.emplace(ModifyAnalysisTrack(clt, name)),
+      modifiedTrack.emplace(ModifyAnalysisTrack(*this, clt, name)),
       lt = modifiedTrack->get();
 
    int count = 0;
