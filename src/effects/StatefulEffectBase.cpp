@@ -22,11 +22,10 @@
 
 #include "ConfigInterface.h"
 #include "../LabelTrack.h"
-#include "../ProjectSettings.h"
 #include "../SelectFile.h"
 #include "../ShuttleAutomation.h"
 #include "../ShuttleGui.h"
-#include "../SyncLock.h"
+#include "SyncLock.h"
 #include "ViewInfo.h"
 #include "WaveTrack.h"
 #include "wxFileNameWrapper.h"
@@ -36,12 +35,6 @@
 #include "../widgets/VetoDialogHook.h"
 
 #include <unordered_map>
-
-static const int kPlayID = 20102;
-static const int kRewindID = 20103;
-static const int kFFwdID = 20104;
-
-using t2bHash = std::unordered_map< void*, bool >;
 
 StatefulEffectBase::Instance::Instance(StatefulEffectBase &effect)
    : mEffect{ effect }

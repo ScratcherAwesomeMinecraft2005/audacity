@@ -35,6 +35,7 @@ set( LIBRARIES
    lib-realtime-effects
    lib-audio-io
    lib-wave-track
+   lib-track-selection
 )
 
 if ( ${_OPT}has_networking )
@@ -50,6 +51,14 @@ if ( ${_OPT}has_audiocom_upload)
       lib-cloud-upload
       lib-cloud-audiocom
    )
+endif()
+
+if( ${_OPT}has_crashreports )
+   if( ${_OPT}crashreport_backend STREQUAL "breakpad" )
+      list( APPEND LIBRARIES lib-breakpad-configurer )
+   elseif( ${_OPT}crashreport_backend STREQUAL "crashpad" )
+      list( APPEND LIBRARIES lib-crashpad-configurer )
+   endif()
 endif()
 
 # This library depends on lib-network-manager

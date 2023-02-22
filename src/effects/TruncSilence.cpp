@@ -14,9 +14,8 @@
        where the volume is below a set threshold level.
 
 *//*******************************************************************/
-
-
 #include "TruncSilence.h"
+#include "EffectEditor.h"
 #include "LoadEffects.h"
 
 #include <algorithm>
@@ -30,9 +29,8 @@
 
 #include "Prefs.h"
 #include "Project.h"
-#include "../ProjectSettings.h"
 #include "../ShuttleGui.h"
-#include "../SyncLock.h"
+#include "SyncLock.h"
 #include "WaveTrack.h"
 #include "../widgets/valnum.h"
 #include "../widgets/AudacityMessageBox.h"
@@ -246,8 +244,7 @@ bool EffectTruncSilence::ProcessIndependently()
 {
    unsigned nGroups = 0;
 
-   const auto &settings = ProjectSettings::Get( *FindProject() );
-   const bool syncLock = settings.IsSyncLocked();
+   const bool syncLock = SyncLockState::Get(*FindProject()).IsSyncLocked();
 
    // Check if it's permissible
    {
@@ -667,7 +664,7 @@ bool EffectTruncSilence::Analyze(RegionList& silenceList,
 }
 
 
-std::unique_ptr<EffectUIValidator> EffectTruncSilence::PopulateOrExchange(
+std::unique_ptr<EffectEditor> EffectTruncSilence::PopulateOrExchange(
    ShuttleGui & S, EffectInstance &, EffectSettingsAccess &,
    const EffectOutputs *)
 {
@@ -941,7 +938,7 @@ void EffectTruncSilence::OnControlChange(wxCommandEvent & WXUNUSED(evt))
 
    UpdateUI();
 
-   if (!EffectUIValidator::EnableApply(
+   if (!EffectEditor::EnableApply(
       mUIParent, mUIParent->TransferDataFromWindow()))
    {
       return;

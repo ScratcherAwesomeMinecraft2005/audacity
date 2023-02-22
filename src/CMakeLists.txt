@@ -102,6 +102,8 @@ list( APPEND SOURCES
       AudacityFileConfig.h
       AudacityHeaders.cpp
       AudacityHeaders.h
+      AudioPasteDialog.cpp
+      AudioPasteDialog.h
       AutoRecoveryDialog.cpp
       AutoRecoveryDialog.h
       BatchCommandDialog.cpp
@@ -223,8 +225,6 @@ list( APPEND SOURCES
       SelectUtilities.h
       SelectFile.cpp
       SelectFile.h
-      SelectionState.cpp
-      SelectionState.h
       Shuttle.cpp
       Shuttle.h
       ShuttleAutomation.cpp
@@ -251,8 +251,6 @@ list( APPEND SOURCES
       SqliteSampleBlock.cpp
       SseMathFuncs.cpp
       SseMathFuncs.h
-      SyncLock.cpp
-      SyncLock.h
       TagsEditor.cpp
       TagsEditor.h
       ThemedWrappers.h
@@ -382,6 +380,8 @@ list( APPEND SOURCES
       effects/AnalysisTracks.h
       effects/AutoDuck.cpp
       effects/AutoDuck.h
+      effects/BasicEffectUIServices.cpp
+      effects/BasicEffectUIServices.h
       effects/BassTreble.cpp
       effects/BassTreble.h
       effects/Biquad.cpp
@@ -410,10 +410,14 @@ list( APPEND SOURCES
       effects/Effect.h
       effects/EffectBase.cpp
       effects/EffectBase.h
+      effects/EffectEditor.cpp
+      effects/EffectEditor.h
       effects/EffectManager.cpp
       effects/EffectManager.h
       effects/EffectUI.cpp
       effects/EffectUI.h
+      effects/EffectUIServices.cpp
+      effects/EffectUIServices.h
       effects/Equalization.cpp
       effects/Equalization.h
       effects/Equalization48x.cpp
@@ -483,10 +487,16 @@ list( APPEND SOURCES
       effects/SimpleMono.h
       effects/SoundTouchEffect.cpp
       effects/SoundTouchEffect.h
+      effects/StatefulEffect.cpp
+      effects/StatefulEffect.h
       effects/StatefulEffectBase.cpp
       effects/StatefulEffectBase.h
+      effects/StatefulEffectUIServices.cpp
+      effects/StatefulEffectUIServices.h
       effects/StatefulPerTrackEffect.cpp
       effects/StatefulPerTrackEffect.h
+      effects/StatelessPerTrackEffect.cpp
+      effects/StatelessPerTrackEffect.h
       effects/StereoToMono.cpp
       effects/StereoToMono.h
       effects/TimeScale.cpp
@@ -529,6 +539,8 @@ list( APPEND SOURCES
          effects/VST3/AudacityVst3HostApplication.cpp
          effects/VST3/memorystream.h
          effects/VST3/memorystream.cpp
+         effects/VST3/VST3Editor.cpp
+         effects/VST3/VST3Editor.h
          effects/VST3/VST3Effect.h
          effects/VST3/VST3Effect.cpp
          effects/VST3/VST3EffectsModule.h
@@ -543,8 +555,6 @@ list( APPEND SOURCES
          effects/VST3/VST3OptionsDialog.cpp
          effects/VST3/VST3ParametersWindow.h
          effects/VST3/VST3ParametersWindow.cpp
-         effects/VST3/VST3UIValidator.cpp
-         effects/VST3/VST3UIValidator.h
          effects/VST3/internal/ConnectionProxy.h
          effects/VST3/internal/ConnectionProxy.cpp
          effects/VST3/internal/PlugFrame.h
@@ -572,6 +582,8 @@ list( APPEND SOURCES
       $<$<AND:$<BOOL:${USE_AUDIO_UNITS}>,$<BOOL:${wxIS_MAC}>>:
          effects/audiounits/AUControl.h
          effects/audiounits/AUControl.mm
+         effects/audiounits/AudioUnitEditor.cpp
+         effects/audiounits/AudioUnitEditor.h
          effects/audiounits/AudioUnitEffect.cpp
          effects/audiounits/AudioUnitEffect.h
          effects/audiounits/AudioUnitEffectOptionsDialog.cpp
@@ -582,8 +594,6 @@ list( APPEND SOURCES
          effects/audiounits/AudioUnitInstance.h
          effects/audiounits/AudioUnitUtils.cpp
          effects/audiounits/AudioUnitUtils.h
-         effects/audiounits/AudioUnitValidator.cpp
-         effects/audiounits/AudioUnitValidator.h
          effects/audiounits/AudioUnitWrapper.cpp
          effects/audiounits/AudioUnitWrapper.h
       >
@@ -599,6 +609,8 @@ list( APPEND SOURCES
       # LV2 Effects
 
       $<$<BOOL:${USE_LV2}>:
+         effects/lv2/LV2Editor.cpp
+         effects/lv2/LV2Editor.h
          effects/lv2/LV2Effect.cpp
          effects/lv2/LV2Effect.h
          effects/lv2/LV2EffectMeter.cpp
@@ -618,8 +630,6 @@ list( APPEND SOURCES
          effects/lv2/LV2UIFeaturesList.cpp
          effects/lv2/LV2UIFeaturesList.h
          effects/lv2/LV2Utils.h
-         effects/lv2/LV2Validator.cpp
-         effects/lv2/LV2Validator.h
          effects/lv2/LV2Wrapper.cpp
          effects/lv2/LV2Wrapper.h
          effects/lv2/LoadLV2.cpp
@@ -1218,7 +1228,6 @@ set( LIBRARIES
       libmp3lame::libmp3lame
       SndFile::sndfile
       sqlite
-      $<$<BOOL:${${_OPT}has_crashreports}>:crashreports>
       $<$<BOOL:${${_OPT}has_vst3}>:vst3sdk::base>
       $<$<BOOL:${${_OPT}has_vst3}>:vst3sdk::pluginterfaces>
       $<$<BOOL:${${_OPT}has_vst3}>:vst3sdk::sdk_hosting>
@@ -1246,6 +1255,28 @@ set( LIBRARIES
       $<$<PLATFORM_ID:Linux,FreeBSD,OpenBSD,NetBSD,CYGWIN>:PkgConfig::GTK>
       $<$<TARGET_EXISTS:Threads::Threads>:Threads::Threads>
 )
+
+if( ${_OPT}has_crashreports )
+   add_dependencies(${TARGET} crashreporter)
+   add_custom_command(
+      TARGET
+         ${TARGET}
+      COMMAND
+         ${CMAKE_COMMAND} -E copy $<TARGET_FILE:crashreporter> ${_DESTDIR}/${_EXEDIR}/$<TARGET_FILE_NAME:crashreporter>
+      POST_BUILD
+   )
+   if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+      add_custom_command(
+         TARGET
+            ${TARGET}
+         COMMAND
+            ${PYTHON}
+            ${CMAKE_SOURCE_DIR}/scripts/build/macOS/fix_bundle.py
+            ${_DESTDIR}/${_EXEDIR}/$<TARGET_FILE_NAME:crashreporter>
+         POST_BUILD
+      )
+   endif()
+endif()
 
 set( BUILDING_AUDACITY YES )
 set( PKGLIBDIR "${_PKGLIBDIR}" )
@@ -1545,6 +1576,23 @@ if( ${_OPT}has_audiocom_upload )
    list( APPEND AUDACITY_LIBRARIES
       lib-cloud-audiocom-interface
    )
+endif()
+
+if( ${_OPT}has_crashreports )
+   if( ${_OPT}crashreport_backend STREQUAL "crashpad" )
+      list(APPEND DEFINES 
+         PRIVATE
+            CRASHREPORTER_NAME="$<TARGET_FILE_NAME:crashreporter>"
+            CRASHPAD_HANDLER_NAME="crashpad_handler${CMAKE_EXECUTABLE_SUFFIX}"
+      )
+      list( APPEND AUDACITY_LIBRARIES 
+         lib-crashpad-configurer-interface
+      )
+   elseif( ${_OPT}crashreport_backend STREQUAL "breakpad" )
+      list( APPEND AUDACITY_LIBRARIES 
+         lib-breakpad-configurer-interface
+      )
+   endif()
 endif()
 
 list( APPEND AUDACITY_LIBRARIES
