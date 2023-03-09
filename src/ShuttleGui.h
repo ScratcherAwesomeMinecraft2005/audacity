@@ -72,8 +72,9 @@ class wxStaticBox;
 class wxSpinCtrl;
 class wxListBox;
 class wxGrid;
-class Shuttle;
+class ShuttlePrefs;
 class ReadOnlyText;
+class AButton;
 
 class WrappedType;
 
@@ -284,6 +285,9 @@ public:
    wxBitmapButton * AddBitmapButton(
       const wxBitmap &Bitmap, int PositionFlags = wxALIGN_CENTRE,
       bool setDefault = false );
+   // Always ORs the flags with wxALL (which affects borders):
+   AButton* AddBitmapToggleButton(
+      const wxImage& ImageOn, const wxImage& ImageOff, int PositionFlags = wxALIGN_CENTRE);
    // When PositionFlags is 0, applies wxALL (which affects borders),
    // and either wxALIGN_CENTER (if bCenter) or else wxEXPAND
    wxStaticText * AddVariableText(
@@ -527,7 +531,7 @@ protected:
    wxWindow *const mpDlg;
    wxSizer * pSizerStack[ nMaxNestedSizers ];
 
-   std::unique_ptr<Shuttle> mpShuttle; /*! Controls source/destination of shuttled data.  You can
+   std::unique_ptr<ShuttlePrefs> mpShuttle; /*! Controls source/destination of shuttled data.  You can
    leave this NULL if you are shuttling to variables */
    int miNoMatchSelector; //! Used in choices to determine which item to use on no match.
 

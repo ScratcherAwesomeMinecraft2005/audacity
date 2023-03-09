@@ -23,11 +23,11 @@
 #include "LoadCommands.h"
 #include "AudacityLogger.h"
 #include "Project.h"
-#include "../ProjectFileIO.h"
+#include "ProjectFileIO.h"
 #include "../ProjectFileManager.h"
 #include "../ProjectManager.h"
 #include "../export/Export.h"
-#include "../Shuttle.h"
+#include "SettingsVisitor.h"
 #include "../ShuttleGui.h"
 #include "CommandContext.h"
 

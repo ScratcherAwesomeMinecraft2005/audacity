@@ -87,8 +87,6 @@ list( APPEND SOURCES
    PRIVATE
       ActiveProject.cpp
       ActiveProject.h
-      ActiveProjects.cpp
-      ActiveProjects.h
       AboutDialog.cpp
       AboutDialog.h
       $<$<NOT:$<BOOL:${${_OPT}bundle_gplv3}>>:AboutDialogGPLv2Text.cpp>
@@ -122,16 +120,12 @@ list( APPEND SOURCES
       CommonCommandFlags.h
       CrashReport.cpp
       CrashReport.h
-      DBConnection.cpp
-      DBConnection.h
       DefaultPlaybackPolicy.cpp
       DefaultPlaybackPolicy.h
       Diags.cpp
       Diags.h
       DropTarget.cpp
       DropoutDetector.cpp
-      EffectPlugin.cpp
-      EffectPlugin.h
       EnvelopeEditor.cpp
       EnvelopeEditor.h
       FFmpeg.cpp
@@ -171,6 +165,10 @@ list( APPEND SOURCES
       LangChoice.h
       Legacy.cpp
       Legacy.h
+      ListNavigationEnabled.cpp
+      ListNavigationEnabled.h
+      ListNavigationPanel.cpp
+      ListNavigationPanel.h
       LogWindow.cpp
       LogWindow.h
       Lyrics.cpp
@@ -183,6 +181,8 @@ list( APPEND SOURCES
       MIDIPlay.h
       MixerBoard.cpp
       MixerBoard.h
+      MovableControl.cpp
+      MovableControl.h
       NoteTrack.cpp
       NoteTrack.h
       PitchName.cpp
@@ -196,16 +196,12 @@ list( APPEND SOURCES
       Profiler.h
       ProjectAudioManager.cpp
       ProjectAudioManager.h
-      ProjectFileIO.cpp
-      ProjectFileIO.h
       ProjectFileManager.cpp
       ProjectFileManager.h
       ProjectManager.cpp
       ProjectManager.h
       ProjectSelectionManager.cpp
       ProjectSelectionManager.h
-      ProjectSerializer.cpp
-      ProjectSerializer.h
       ProjectSettings.cpp
       ProjectSettings.h
       ProjectWindow.cpp
@@ -225,16 +221,10 @@ list( APPEND SOURCES
       SelectUtilities.h
       SelectFile.cpp
       SelectFile.h
-      Shuttle.cpp
-      Shuttle.h
-      ShuttleAutomation.cpp
-      ShuttleAutomation.h
       ShuttleGetDefinition.cpp
       ShuttleGetDefinition.h
       ShuttleGui.cpp
       ShuttleGui.h
-      ShuttlePrefs.cpp
-      ShuttlePrefs.h
       Snap.cpp
       Snap.h
       SoundActivatedRecord.cpp
@@ -248,7 +238,6 @@ list( APPEND SOURCES
       SpectrumTransformer.h
       SplashDialog.cpp
       SplashDialog.h
-      SqliteSampleBlock.cpp
       SseMathFuncs.cpp
       SseMathFuncs.h
       TagsEditor.cpp
@@ -292,8 +281,6 @@ list( APPEND SOURCES
       VoiceKey.h
       WaveTrackLocation.cpp
       WaveTrackLocation.h
-      WrappedType.cpp
-      WrappedType.h
 
       # Commands
 
@@ -406,10 +393,6 @@ list( APPEND SOURCES
       effects/EBUR128.h
       effects/Echo.cpp
       effects/Echo.h
-      effects/Effect.cpp
-      effects/Effect.h
-      effects/EffectBase.cpp
-      effects/EffectBase.h
       effects/EffectEditor.cpp
       effects/EffectEditor.h
       effects/EffectManager.cpp
@@ -446,8 +429,6 @@ list( APPEND SOURCES
       effects/Generator.h
       effects/Invert.cpp
       effects/Invert.h
-      effects/LoadEffects.cpp
-      effects/LoadEffects.h
       effects/Loudness.cpp
       effects/Loudness.h
       effects/Noise.cpp
@@ -460,8 +441,6 @@ list( APPEND SOURCES
       effects/Normalize.h
       effects/Paulstretch.cpp
       effects/Paulstretch.h
-      effects/PerTrackEffect.cpp
-      effects/PerTrackEffect.h
       effects/Phaser.cpp
       effects/Phaser.h
       effects/RealtimeEffectStateUI.h
@@ -489,8 +468,6 @@ list( APPEND SOURCES
       effects/SoundTouchEffect.h
       effects/StatefulEffect.cpp
       effects/StatefulEffect.h
-      effects/StatefulEffectBase.cpp
-      effects/StatefulEffectBase.h
       effects/StatefulEffectUIServices.cpp
       effects/StatefulEffectUIServices.h
       effects/StatefulPerTrackEffect.cpp
@@ -671,12 +648,14 @@ list( APPEND SOURCES
       export/ExportMultiple.cpp
       export/ExportMultiple.h
       export/ExportPCM.cpp
+      export/MP3Prefs.cpp
 
       # Optional exporters
       $<$<BOOL:${USE_FFMPEG}>:
          export/ExportFFmpeg.cpp
          export/ExportFFmpegDialogs.cpp
          export/ExportFFmpegDialogs.h
+         export/FFmpegPrefs.cpp
       >
 
       $<$<BOOL:${USE_LIBFLAC}>:
@@ -763,6 +742,8 @@ list( APPEND SOURCES
       menus/FileMenus.cpp
       menus/HelpMenus.cpp
       menus/LabelMenus.cpp
+      menus/MenuHelper.cpp
+      menus/MenuHelper.h
       menus/NavigationMenus.cpp
       menus/PluginMenus.cpp
       menus/SelectMenus.cpp
@@ -1227,7 +1208,6 @@ set( LIBRARIES
       ZLIB::ZLIB
       libmp3lame::libmp3lame
       SndFile::sndfile
-      sqlite
       $<$<BOOL:${${_OPT}has_vst3}>:vst3sdk::base>
       $<$<BOOL:${${_OPT}has_vst3}>:vst3sdk::pluginterfaces>
       $<$<BOOL:${${_OPT}has_vst3}>:vst3sdk::sdk_hosting>
@@ -1546,12 +1526,11 @@ endif()
 
 set( AUDACITY_LIBRARIES
 # A sub-sequence of what is in libraries/CMakeLists.txt :
-   lib-uuid-interface
    lib-theme-resources-interface
    lib-graphics-interface
    lib-tags-interface
-   lib-audio-io-interface
-   lib-wave-track-interface
+   lib-project-file-io-interface
+   lib-effects-interface
 )
 
 if (${_OPT}use_ffmpeg)
@@ -1594,14 +1573,6 @@ if( ${_OPT}has_crashreports )
       )
    endif()
 endif()
-
-list( APPEND AUDACITY_LIBRARIES
-   # If Sentry reporting is enabled, this library depends on
-   # lib-network-manager
-   # If Sentry reporting is disabled, an INTERFACE library
-   # will be defined
-   lib-sentry-reporting
-)
 
 propagate_interesting_dependencies( ${TARGET} "${AUDACITY_LIBRARIES}" )
 

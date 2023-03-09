@@ -4,7 +4,6 @@
 #include "PluginManager.h"
 #include "Prefs.h"
 #include "Project.h"
-#include "../ProjectFileIO.h"
 #include "../ProjectFileManager.h"
 #include "ProjectHistory.h"
 #include "../ProjectManager.h"
@@ -19,7 +18,6 @@
 #include "../commands/CommandManager.h"
 #include "RealtimeEffectList.h"
 #include "RealtimeEffectState.h"
-#include "../export/ExportMP3.h"
 #include "../export/ExportMultiple.h"
 #include "../import/Import.h"
 #include "../import/ImportRaw.h"
@@ -37,7 +35,6 @@ namespace {
 void DoExport(AudacityProject &project, const FileExtension &format)
 {
    auto &tracks = TrackList::Get( project );
-   auto &projectFileIO = ProjectFileIO::Get( project );
    
    Exporter e{ project };
 

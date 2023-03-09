@@ -22,7 +22,8 @@
 #endif
 
 #include "SoundTouchEffect.h"
-#include "../ShuttleAutomation.h"
+#include "ShuttleAutomation.h"
+#include <wx/weakref.h>
 
 class wxSlider;
 class wxCheckBox;

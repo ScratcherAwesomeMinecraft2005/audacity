@@ -14,7 +14,8 @@
 #define __AUDACITY_EFFECT_CHANGESPEED__
 
 #include "StatefulEffect.h"
-#include "../ShuttleAutomation.h"
+#include "ShuttleAutomation.h"
+#include <wx/weakref.h>
 
 class wxSlider;
 class wxChoice;

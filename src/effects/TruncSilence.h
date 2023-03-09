@@ -18,7 +18,8 @@
 #define __AUDACITY_EFFECT_TRUNC_SILENCE__
 
 #include "StatefulEffect.h"
-#include "../ShuttleAutomation.h"
+#include "ShuttleAutomation.h"
+#include <wx/weakref.h>
 
 class ShuttleGui;
 class wxChoice;
