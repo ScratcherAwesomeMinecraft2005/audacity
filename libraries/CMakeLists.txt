@@ -47,6 +47,10 @@ set( LIBRARIES
    lib-time-track
    lib-vst3
    lib-snapping
+   lib-vst
+   lib-lv2
+   lib-ladspa
+   lib-audio-unit
 )
 
 if ( ${_OPT}has_networking )

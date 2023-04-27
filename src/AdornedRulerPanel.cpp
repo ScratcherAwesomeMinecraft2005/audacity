@@ -1383,6 +1383,7 @@ void AdornedRulerPanel::UpdatePrefs()
 #endif
 #endif
 
+   mRulerType = RulerPanelViewPreference.ReadEnum();
    RefreshTimelineFormat();
    // Update();
 }
@@ -2913,6 +2914,21 @@ void AdornedRulerPanel::TogglePinnedHead()
    auto &scrubber = Scrubber::Get( project );
    if (scrubber.HasMark())
       scrubber.SetScrollScrubbing(value);
+}
+
+AdornedRulerPanel::RulerTypeValues AdornedRulerPanel::GetRulerType() const
+{
+   return mRulerType;
+}
+
+void AdornedRulerPanel::SetRulerType (RulerTypeValues type)
+{
+   if (mRulerType == type)
+      return;
+
+   mRulerType = type;
+   RulerPanelViewPreference.WriteEnum(mRulerType);
+   RefreshTimelineFormat();
 }
 
 // Attach menu item

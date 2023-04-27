@@ -14,6 +14,7 @@
 #include <memory>
 #include <optional>
 
+#include "Callable.h"
 #include "Registry.h"
 #include "NumericConverterType.h"
 
@@ -38,21 +39,19 @@ using NumericConverterFormatterFactoryPtr =
 struct NumericConverterRegistryGroupTag {};
 
 struct NUMERIC_FORMATS_API NumericConverterRegistryGroup :
-    public Registry::InlineGroupItem<NumericConverterRegistryGroupTag>
+    public Registry::GroupItem<NumericConverterRegistryGroupTag>
 {
    template <typename... Args>
    NumericConverterRegistryGroup(
       const Identifier& internalName, NumericConverterType _type,
       Args&&... args)
-       : InlineGroupItem { internalName, std::forward<Args>(args)... }
+       : GroupItem { internalName, std::forward<Args>(args)... }
        , type { std::move(_type) }
    {
    }
 
    ~NumericConverterRegistryGroup() override;
 
-   bool Transparent() const override;
-   
    NumericConverterType type;
 };
 
@@ -77,7 +76,7 @@ struct NUMERIC_FORMATS_API NumericConverterRegistryItem : public Registry::Singl
 
 struct NUMERIC_FORMATS_API NumericConverterRegistry final
 {
-   static Registry::GroupItem& Registry();
+   static Registry::GroupItemBase& Registry();
 
    using Visitor = std::function<void(const NumericConverterRegistryItem&)>;
    
@@ -90,24 +89,11 @@ struct NUMERIC_FORMATS_API NumericConverterRegistry final
       const NumericFormatSymbol& symbol);
 };
 
-NUMERIC_FORMATS_API Registry::BaseItemPtr NumericConverterFormatterItem(
-   const Identifier& functionId, const TranslatableString& label,
-   NumericConverterFormatterFactoryPtr factory);
+constexpr auto NumericConverterFormatterItem =
+   Callable::UniqueMaker<NumericConverterRegistryItem>();
 
-NUMERIC_FORMATS_API Registry::BaseItemPtr NumericConverterFormatterItem(
-   const Identifier& functionId, const TranslatableString& label,
-   const TranslatableString& fractionLabel,
-   NumericConverterFormatterFactoryPtr factory);
-
-template <typename... Args>
-Registry::BaseItemPtr NumericConverterFormatterGroup(
-   const Identifier& groupId, const NumericConverterType& type,
-   Args&&... args)
-{
-   return std::make_unique<NumericConverterRegistryGroup>(
-      groupId, type, std::forward<Args>(args)...);
-}
-
+constexpr auto NumericConverterFormatterGroup =
+   Callable::UniqueMaker<NumericConverterRegistryGroup>();
 
 struct NUMERIC_FORMATS_API NumericConverterItemRegistrator final :
     public Registry::RegisteredItem<

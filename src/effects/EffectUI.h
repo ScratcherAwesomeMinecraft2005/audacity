@@ -110,8 +110,6 @@ private:
 
    void CleanupRealtime();
 
-   void StopPlayback();
-
 private:
    Observer::Subscription mAudioIOSubscription, mEffectStateSubscription;
 
@@ -141,8 +139,6 @@ private:
 
    bool mEnabled{ true };
 
-   bool mDisableTransport{ true };
-   bool mPlaying{};
    bool mCapturing{};
 
    SelectedRegion mRegion;
@@ -212,5 +208,9 @@ private:
    DECLARE_EVENT_TABLE()
    wxDECLARE_NO_COPY_CLASS(EffectDialog);
 };
+
+#if defined(__WXMAC__)
+void MacMakeWindowFloating(NSView *handle);
+#endif
 
 #endif // __AUDACITY_EFFECTUI_H__

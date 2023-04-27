@@ -43,24 +43,6 @@ else()
    file( WRITE "${_PRVDIR}/RevisionIdent.h" "" )
 endif()
 
-# Handle Audio Units option
-if( CMAKE_SYSTEM_NAME MATCHES "Darwin" )
-   cmd_option(
-      ${_OPT}use_audio_units
-      "Use Audio Units plug-in support [on, off]"
-      ON
-   )
-   set( USE_AUDIO_UNITS ${${_OPT}use_audio_units} CACHE INTERNAL "" )
-endif()
-
-# Handle Ladspa option
-cmd_option(
-   ${_OPT}use_ladspa
-   "Use LADSPA plug-in support [on, off]"
-   ON
-)
-set( USE_LADSPA ${${_OPT}use_ladspa} CACHE INTERNAL "" )
-
 # Handle VST option
 cmd_option(
    ${_OPT}use_vst
@@ -371,6 +353,7 @@ list( APPEND SOURCES
       effects/EffectManager.cpp
       effects/EffectManager.h
       effects/EffectUI.cpp
+      $<$<BOOL:${wxIS_MAC}>:effects/EffectUI.mm>
       effects/EffectUI.h
       effects/EffectUIServices.cpp
       effects/EffectUIServices.h
@@ -464,9 +447,12 @@ list( APPEND SOURCES
 
       $<$<BOOL:${USE_VST}>:
          effects/VST/VSTControl.h
+         effects/VST/VSTEditor.cpp
+         effects/VST/VSTEditor.h
          effects/VST/VSTEffect.cpp
          effects/VST/VSTEffect.h
-         effects/VST/aeffectx.h
+         effects/VST/VSTEffectOptionsDialog.cpp
+         effects/VST/VSTEffectOptionsDialog.h
       >
 
       $<$<AND:$<BOOL:${USE_VST}>,$<BOOL:${wxIS_GTK}>>:
@@ -517,22 +503,17 @@ list( APPEND SOURCES
          effects/audiounits/AudioUnitEffect.h
          effects/audiounits/AudioUnitEffectOptionsDialog.cpp
          effects/audiounits/AudioUnitEffectOptionsDialog.h
-         effects/audiounits/AudioUnitEffectsModule.cpp
-         effects/audiounits/AudioUnitEffectsModule.h
-         effects/audiounits/AudioUnitInstance.cpp
-         effects/audiounits/AudioUnitInstance.h
-         effects/audiounits/AudioUnitUtils.cpp
-         effects/audiounits/AudioUnitUtils.h
-         effects/audiounits/AudioUnitWrapper.cpp
-         effects/audiounits/AudioUnitWrapper.h
       >
 
       # Ladspa Effects
 
       $<$<BOOL:${USE_LADSPA}>:
+         effects/ladspa/LadspaEditor.cpp
+         effects/ladspa/LadspaEditor.h
          effects/ladspa/LadspaEffect.cpp
          effects/ladspa/LadspaEffect.h
-         effects/ladspa/ladspa.h
+	 effects/ladspa/LadspaEffectOptionsDialog.cpp
+	 effects/ladspa/LadspaEffectOptionsDialog.h
       >
 
       # LV2 Effects
@@ -544,30 +525,11 @@ list( APPEND SOURCES
          effects/lv2/LV2Effect.h
          effects/lv2/LV2EffectMeter.cpp
          effects/lv2/LV2EffectMeter.h
-         effects/lv2/LV2FeaturesList.cpp
-         effects/lv2/LV2FeaturesList.h
-         effects/lv2/LV2Instance.cpp
-         effects/lv2/LV2Instance.h
-         effects/lv2/LV2InstanceFeaturesList.cpp
-         effects/lv2/LV2InstanceFeaturesList.h
-         effects/lv2/LV2Ports.cpp
-         effects/lv2/LV2Ports.h
-         effects/lv2/LV2Preferences.cpp
-         effects/lv2/LV2Preferences.h
-         effects/lv2/LV2Symbols.cpp
-         effects/lv2/LV2Symbols.h
+         effects/lv2/LV2PreferencesDialog.cpp
+         effects/lv2/LV2PreferencesDialog.h
          effects/lv2/LV2UIFeaturesList.cpp
          effects/lv2/LV2UIFeaturesList.h
-         effects/lv2/LV2Utils.h
-         effects/lv2/LV2Wrapper.cpp
-         effects/lv2/LV2Wrapper.h
-         effects/lv2/LoadLV2.cpp
-         effects/lv2/LoadLV2.h
          effects/lv2/NativeWindow.h
-         effects/lv2/lv2_external_ui.h
-         effects/lv2/zix/common.h
-         effects/lv2/zix/ring.cpp
-         effects/lv2/zix/ring.h
       >
 
       # Nyquist Effects
@@ -699,6 +661,7 @@ list( APPEND SOURCES
       menus/NavigationMenus.cpp
       menus/PluginMenus.cpp
       menus/SelectMenus.cpp
+      menus/TimelineMenus.cpp
       menus/ToolbarMenus.cpp
       menus/TrackMenus.cpp
       menus/TransportMenus.cpp
@@ -940,10 +903,6 @@ list( APPEND SOURCES
       tracks/ui/ZoomHandle.cpp
       tracks/ui/ZoomHandle.h
 
-      # ui helpers
-      ui/AccessibleLinksFormatter.h
-      ui/AccessibleLinksFormatter.cpp
-
       # Widgets
 
       widgets/AButton.cpp
@@ -1010,10 +969,6 @@ list( APPEND SOURCES
       widgets/RulerPanel.h
       widgets/RulerUpdater.cpp
       widgets/RulerUpdater.h
-      $<$<BOOL:${${_OPT}has_sentry_reporting}>:
-         widgets/ErrorReportDialog.cpp
-         widgets/ErrorReportDialog.h
-      >
       widgets/TimeFormat.cpp
       widgets/TimeFormat.h
       widgets/UnwritableLocationErrorDialog.cpp
@@ -1166,7 +1121,6 @@ set( LIBRARIES
       $<$<BOOL:${USE_LIBVORBIS}>:Vorbis::vorbisenc>
       $<$<BOOL:${USE_LIBOPUS}>:Opus::opus>
       $<$<BOOL:${USE_LIBTWOLAME}>:twolame>
-      $<$<BOOL:${USE_LV2}>:lv2>
       $<$<BOOL:${USE_MIDI}>:portmidi::portmidi>
       $<$<BOOL:${USE_MIDI}>:portsmf>
       $<$<BOOL:${USE_NYQUIST}>:libnyquist>
@@ -1294,7 +1248,7 @@ elseif( CMAKE_SYSTEM_NAME MATCHES "Darwin" )
    set_source_files_properties(
       AudacityApp.mm
       KeyboardCapture.cpp
-      effects/EffectUI.cpp
+      effects/EffectUI.mm
       effects/VST/VSTControlOSX.mm
       effects/audiounits/AUControl.mm
       widgets/FileDialog/mac/FileDialogPrivate.mm
@@ -1313,7 +1267,6 @@ elseif( CMAKE_SYSTEM_NAME MATCHES "Darwin" )
    # Add our required frameworks
    list( APPEND LIBRARIES
       PRIVATE
-         "-framework AudioUnit"
          "-framework CoreAudio"
          "-framework CoreAudioKit"
    )
@@ -1471,10 +1424,32 @@ set( AUDACITY_LIBRARIES
    lib-snapping-interface
 )
 
+if (USE_VST)
+   list( APPEND AUDACITY_LIBRARIES
+      lib-vst-interface
+   )
+endif()
+
+if (USE_LV2)
+   list( APPEND AUDACITY_LIBRARIES
+      lib-lv2-interface
+   )
+endif()
+
+if (${_OPT}use_ladspa)
+   list( APPEND AUDACITY_LIBRARIES
+      lib-ladspa-interface
+   )
+endif()
+
 if (${_OPT}has_vst3)
    list( APPEND AUDACITY_LIBRARIES
       lib-vst3-interface
    )
+endif()
+
+if (USE_AUDIO_UNITS AND wxIS_MAC)
+   list(APPEND AUDACITY_LIBRARIES lib-audio-unit-interface)
 endif()
 
 if (${_OPT}use_ffmpeg)

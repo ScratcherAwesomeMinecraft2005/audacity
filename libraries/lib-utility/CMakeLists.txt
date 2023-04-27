@@ -18,9 +18,12 @@ correspond to things in the standard.
 set( SOURCES
    BufferedStreamReader.cpp
    BufferedStreamReader.h
+   CFResources.cpp
+   CFResources.h
+   Callable.cpp
+   Callable.h
    CommandLineArgs.cpp
    CommandLineArgs.h
-   CFResources.h
    GlobalVariable.h
    MemoryX.cpp
    MemoryX.h
@@ -33,8 +36,23 @@ set( SOURCES
    Observer.h
    PackedArray.h
    spinlock.h
+   TypeEnumerator.cpp
+   TypeEnumerator.h
+   TypeList.cpp
+   TypeList.h
+   TypeListVisitor.h
    TypedAny.h
+   Variant.cpp
+   Variant.h
 )
-audacity_library( lib-utility "${SOURCES}" ""
+set( LIBRARIES
+)
+
+if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    find_library(CORE_FOUNDATION CoreFoundation)
+    set( LIBRARIES PRIVATE ${CORE_FOUNDATION})
+endif()
+
+audacity_library( lib-utility "${SOURCES}" "${LIBRARIES}"
    "" ""
 )

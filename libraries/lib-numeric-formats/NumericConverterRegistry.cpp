@@ -25,7 +25,7 @@ struct RegistryVisitor : public Registry::Visitor
    {
    }
 
-   void BeginGroup(Registry::GroupItem& item, const Path&) override
+   void BeginGroup(Registry::GroupItemBase& item, const Path&) override
    {
       auto concreteGroup = dynamic_cast<NumericConverterRegistryGroup*>(&item);
 
@@ -33,7 +33,7 @@ struct RegistryVisitor : public Registry::Visitor
          concreteGroup != nullptr && concreteGroup->type == requestedType;
    }
 
-   void EndGroup(Registry::GroupItem&, const Path&) override
+   void EndGroup(Registry::GroupItemBase&, const Path&) override
    {
       mInMatchingGroup = false;
    }
@@ -92,9 +92,9 @@ struct RegistryVisitor : public Registry::Visitor
  {
  }
 
-Registry::GroupItem& NumericConverterRegistry::Registry()
+Registry::GroupItemBase& NumericConverterRegistry::Registry()
 {
-   static Registry::TransparentGroupItem<> registry { PathStart };
+   static Registry::GroupItem<> registry { PathStart };
    return registry;
 }
 
@@ -109,7 +109,7 @@ void NumericConverterRegistry::Visit(
 
    RegistryVisitor registryVisitor { std::move(visitor), context, type };
 
-   Registry::TransparentGroupItem<> top { PathStart };
+   Registry::GroupItem<> top { PathStart };
    Registry::Visit(registryVisitor, &top, &Registry());
 }
 
@@ -135,31 +135,8 @@ NumericConverterRegistryGroup::~NumericConverterRegistryGroup()
 {
 }
 
-bool NumericConverterRegistryGroup::Transparent() const
-{
-   return true;
-}
-
 NumericConverterItemRegistrator::NumericConverterItemRegistrator(
    const Registry::Placement& placement, Registry::BaseItemPtr pItem)
     : RegisteredItem { std::move(pItem), placement }
 {
 }
-
-NUMERIC_FORMATS_API Registry::BaseItemPtr NumericConverterFormatterItem(
-   const Identifier& functionId, const TranslatableString& label,
-   NumericConverterFormatterFactoryPtr factory)
-{
-   return std::make_unique<NumericConverterRegistryItem>(
-      functionId, label, std::move(factory));
-}
-
-NUMERIC_FORMATS_API Registry::BaseItemPtr NumericConverterFormatterItem(
-   const Identifier& functionId, const TranslatableString& label,
-   const TranslatableString& fractionLabel,
-   NumericConverterFormatterFactoryPtr factory)
-{
-   return std::make_unique<NumericConverterRegistryItem>(
-      functionId, label, fractionLabel, std::move(factory));
-}
-

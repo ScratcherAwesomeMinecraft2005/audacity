@@ -18,11 +18,14 @@
 #include <wx/checkbox.h>
 #include <wx/combo.h>
 #include <wx/menu.h>
+#include <wx/textctrl.h>
 
 #include "ToolManager.h"
 
 
 #include "widgets/BasicMenu.h"
+#include "widgets/auStaticText.h"
+
 #include "wxWidgetsWindowPlacement.h"
 
 #include "Prefs.h"
@@ -40,6 +43,7 @@
 
 namespace
 {
+const TranslatableString SnapLabel = XO("Snap");
 TranslatableString GetSnapToLabel(Identifier snapTo)
 {
    auto item = SnapFunctionsRegistry::Find(snapTo);
@@ -59,7 +63,7 @@ struct PopupMenuBuilder final : public SnapRegistryVisitor
    
    void BeginGroup(const SnapRegistryGroup& item) override
    {
-      if (item.transparent)
+      if (item.inlined)
          return;
 
       auto menu = safenew wxMenu;
@@ -72,7 +76,7 @@ struct PopupMenuBuilder final : public SnapRegistryVisitor
    {
       assert(!menuStack.empty());
       
-      if (item.transparent)
+      if (item.inlined)
       {
          menuStack.back()->AppendSeparator();
          return;
@@ -327,32 +331,45 @@ void SnappingToolBar::Populate()
    auto sizer = safenew wxFlexGridSizer(1, 1, 1);
    Add(sizer, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
 
-   mSnapModeCheckBox =
-      safenew wxCheckBox(this, wxID_ANY, XO("Snap").Translation());
-   mSnapModeCheckBox->SetName(XO("Snap").Translation());
+   auto boxSizer = safenew wxBoxSizer(wxHORIZONTAL);
+
+   mSnapModeCheckBox = safenew wxCheckBox(this, wxID_ANY, {});
+   
+   mSnapModeCheckBox->SetName(SnapLabel.Stripped().Translation());
 #if wxUSE_ACCESSIBILITY
    // so that name can be set on a standard control
    mSnapModeCheckBox->SetAccessible(
       safenew WindowAccessible(mSnapModeCheckBox));
 #endif
 
-   sizer->Add(mSnapModeCheckBox, 0, wxBOTTOM | wxRIGHT | wxEXPAND, 5);
+   auto snapLabelCtrl = safenew auStaticText(this, SnapLabel.Translation());
+
+   boxSizer->Add(mSnapModeCheckBox, 0, wxEXPAND, 0);
+   boxSizer->Add(snapLabelCtrl, 0, wxEXPAND, 0);
+
+   sizer->Add(boxSizer, 0, wxBOTTOM | wxRIGHT | wxEXPAND, 5);
 
    const bool snapEnabled =
       ProjectSnap::Get(mProject).GetSnapMode() != SnapMode::SNAP_OFF;
 
    mSnapModeCheckBox->SetValue(snapEnabled);
+   
 
    mSnapToCombo = safenew wxComboCtrl(
       this, wxID_ANY, {}, wxDefaultPosition, wxDefaultSize /*, wxCB_READONLY*/);
 #if wxUSE_ACCESSIBILITY
    // so that name can be set on a standard control
-   mSnapToCombo->SetAccessible(safenew WindowAccessible(mSnapToCombo));
+   mSnapToCombo->GetTextCtrl()->SetAccessible(
+      safenew WindowAccessible(mSnapToCombo->GetTextCtrl()));
 #endif
 
    //mSnapToCombo->SetEditable(false);
    mSnapToCombo->SetPopupControl(safenew SnapModePopup(mProject));
-   mSnapToCombo->SetName(mSnapToCombo->GetValue());
+   /* i18n-hint: combo box is the type of the control/widget */
+   mSnapToCombo->GetTextCtrl()->SetName(XO("Snap to combo box").Translation());
+   /* Narrator screen reader by default reads the accessibility name of the
+   containing window, which by default is combobox, so set it to an empty string. */
+   mSnapToCombo->SetLabel(wxT(""));
    mSnapToCombo->Enable(snapEnabled);
    mSnapToCombo->SetMinSize(wxSize(150, -1));
    
@@ -375,6 +392,27 @@ void SnappingToolBar::Populate()
 
          mSnapModeCheckBox->SetValue(!mSnapModeCheckBox->GetValue());
 
+         OnSnapModeChanged();
+      });
+
+   mSnapModeCheckBox->Bind(
+      wxEVT_SET_FOCUS,
+      [snapLabelCtrl](auto&) { snapLabelCtrl->SetSelected(true); });
+
+   mSnapModeCheckBox->Bind(
+      wxEVT_KILL_FOCUS,
+      [snapLabelCtrl](auto&) { snapLabelCtrl->SetSelected(false); });
+
+   // When the focus is lost, clear out any text selection.
+   // See https://github.com/audacity/audacity/issues/4427
+   mSnapToCombo->Bind(
+      wxEVT_KILL_FOCUS, [this](auto&) { mSnapToCombo->SelectNone(); });
+
+   snapLabelCtrl->Bind(
+      wxEVT_LEFT_UP,
+      [this](auto&)
+      {
+         mSnapModeCheckBox->SetValue(!mSnapModeCheckBox->GetValue());
          OnSnapModeChanged();
       });
 
@@ -412,6 +450,12 @@ void SnappingToolBar::OnSnapModeChanged()
       snapEnabled ? SnapMode::SNAP_NEAREST : SnapMode::SNAP_OFF);
 
    mSnapToCombo->Enable(snapEnabled);
+
+   
+   // wxEVT_KILL_FOCUS is not always sent by wxWidgets.
+   // Remove any selection from the combo box if we've disabled it.
+   if (!snapEnabled)
+      mSnapToCombo->SelectNone();
 }
 
 static RegisteredToolbarFactory factory{
