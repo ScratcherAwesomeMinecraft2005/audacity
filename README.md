@@ -22,7 +22,7 @@ This is my own custom, personal use version of Audacity with a few small changes
 - Extended ranges for some effect parameters
 - And more...
 
-See a full and detailed list of changes [here](https://github.com/ScratcherAwesomeMinecraft2005/audacity/blob/master/CHANGES.md).
+See a full and detailed list of changes [here](https://github.com/somefoolouthere/audacity/blob/master/CHANGES.md).
 
 <!-- ## Users
 
@@ -31,7 +31,7 @@ Help with using Audacity is available at https://audacityteam.org/help -->
 
 ## Developers
 
-Build instructions are available [here](https://github.com/ScratcherAwesomeMinecraft2005/audacity/blob/master/BUILDING.md).
+Build instructions are available [here](https://github.com/somefoolouthere/audacity/blob/master/BUILDING.md).
 
 Additional development resources may be found in the [wiki](https://github.com/audacity/audacity/wiki).
 
