@@ -27,7 +27,7 @@ See a full and detailed list of changes [here](https://github.com/somefoolouther
 <!-- ## Users
 
 For end users, the latest Windows and macOS release version of Audacity is available from the [Audacity website](https://www.audacityteam.org/download/).
-Help with using Audacity is available at https://audacityteam.org/help -->
+Help with using Audacity is available [here](https://audacityteam.org/help/).
 
 ## Developers
 
