@@ -259,9 +259,11 @@ void FormatMenuTable::OnFormatChange(wxCommandEvent & event)
                             XO("Processing...   0%%"),
                             pdlgHideStopButton };
 
+   // Simply finding a denominator for the progress dialog
    sampleCount totalSamples{ 0 };
    for (const auto& channel : TrackList::Channels(pTrack))
       // Hidden samples are processed too, they should be counted as well
+      // (Correctly counting all samples of all channels)
       totalSamples += channel->GetSequenceSamplesCount();
    sampleCount processedSamples{ 0 };
 
@@ -489,14 +491,12 @@ static const auto MenuPathStart = wxT("WaveTrackMenu");
 
 //=============================================================================
 // Class defining common command handlers for mono and stereo tracks
-struct WaveTrackMenuTable
-   : ComputedPopupMenuTable< WaveTrackMenuTable, WaveTrackPopupMenuTable >
+struct WaveTrackMenuTable : WaveTrackPopupMenuTable
 {
    static WaveTrackMenuTable &Instance();
 
    WaveTrackMenuTable()
-      : ComputedPopupMenuTable< WaveTrackMenuTable, WaveTrackPopupMenuTable >{
-         MenuPathStart }
+      : WaveTrackPopupMenuTable{ MenuPathStart }
    {
       mNextId = FirstAttachedItemId;
    }
@@ -561,9 +561,9 @@ BEGIN_POPUP_MENU(WaveTrackMenuTable)
    BeginSection( "SubViews" );
       // Multi-view check mark item, if more than one track sub-view type is
       // known
-      Append( []( My &table ) -> Registry::BaseItemPtr {
-         if ( WaveTrackSubViews::slots() > 1 )
-            return std::make_unique<Entry>(
+      Append(Adapt<My>([](My &table) {
+         return (WaveTrackSubViews::slots() > 1)
+            ? std::make_unique<Entry>(
                "MultiView", Entry::CheckItem, OnMultiViewID, XXO("&Multi-view"),
                POPUP_MENU_FN( OnMultiView ),
                table,
@@ -572,10 +572,9 @@ BEGIN_POPUP_MENU(WaveTrackMenuTable)
                   auto &track = table.FindWaveTrack();
                   const auto &view = WaveTrackView::Get( track );
                   menu.Check( id, view.GetMultiView() );
-               } );
-            else
-               return nullptr;
-      } );
+               } )
+            : nullptr;
+      }));
 
       // Append either a checkbox or radio item for each sub-view.
       // Radio buttons if in single-view mode, else checkboxes
@@ -613,7 +612,7 @@ BEGIN_POPUP_MENU(WaveTrackMenuTable)
                   menu.Enable( id, false );
             };
          };
-         Append( [type, id]( My &table ) -> Registry::BaseItemPtr {
+         Append(Adapt<My>([type, id](My &table) {
             const auto pTrack = &table.FindWaveTrack();
             const auto &view = WaveTrackView::Get( *pTrack );
             const auto itemType =
@@ -622,7 +621,7 @@ BEGIN_POPUP_MENU(WaveTrackMenuTable)
                id, type.name.Msgid(),
                POPUP_MENU_FN( OnSetDisplay ), table,
                initFn( !view.GetMultiView() ) );
-         } );
+         }));
          ++id;
       }
       BeginSection( "Extra" );
