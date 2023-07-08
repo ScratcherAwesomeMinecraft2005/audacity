@@ -28,6 +28,7 @@ using SampleBlockFactoryPtr = std::shared_ptr<SampleBlockFactory>;
 
 class TimeWarper;
 
+class ClipInterface;
 class Sequence;
 class WaveClip;
 class AudioSegmentSampleView;
@@ -36,6 +37,8 @@ class AudioSegmentSampleView;
 using WaveClipHolder = std::shared_ptr<WaveClip>;
 using WaveClipHolders = std::vector <WaveClipHolder>;
 using WaveClipConstHolders = std::vector < std::shared_ptr< const WaveClip > >;
+
+using ClipConstHolders = std::vector<std::shared_ptr<const ClipInterface>>;
 
 // Temporary arrays of mere pointers
 using WaveClipPointers = std::vector < WaveClip* >;
@@ -50,7 +53,9 @@ using ChannelSampleView = std::vector<AudioSegmentSampleView>;
 
 class Envelope;
 
-class WAVE_TRACK_API WaveTrack final : public WritableSampleTrack
+class WAVE_TRACK_API WaveTrack final
+   : public WritableSampleTrack
+   , public Channel
 {
 public:
    /// \brief Structure to hold region of a wavetrack and a comparison function
@@ -255,7 +260,8 @@ private:
     * @return nBuffers `ChannelSampleView`s, one per channel.
     */
    std::vector<ChannelSampleView> GetSampleView(
-      size_t iChannel, size_t nBuffers, sampleCount start, size_t len) const;
+      size_t iChannel, size_t nBuffers, sampleCount start, size_t len,
+      bool backwards) const;
 
    ///
    /// MM: Now that each wave track can contain multiple clips, we don't
@@ -268,13 +274,14 @@ private:
    /// guaranteed that the same samples are affected.
    ///
 
-   bool Get(size_t iChannel, size_t nBuffers, samplePtr buffers[],
-      sampleFormat format, sampleCount start, size_t len,
+   bool Get(
+      size_t iChannel, size_t nBuffers, samplePtr buffers[],
+      sampleFormat format, sampleCount start, size_t len, bool backwards,
       fillFormat fill = fillZero, bool mayThrow = true,
       // Report how many samples were copied from within clips, rather than
       // filled according to fillFormat; but these were not necessarily one
       // contiguous range.
-      sampleCount * pNumWithinClips = nullptr) const override;
+      sampleCount* pNumWithinClips = nullptr) const override;
    /*!
     Set samples in the unique channel
     TODO wide wave tracks -- overloads to set one or all channels
@@ -293,8 +300,9 @@ private:
 
    bool HasTrivialEnvelope() const override;
 
-   void GetEnvelopeValues(double *buffer, size_t bufferLen,
-                         double t0) const override;
+   void GetEnvelopeValues(
+      double* buffer, size_t bufferLen, double t0,
+      bool backwards) const override;
 
    // Get min and max from the unique channel
    /*!
@@ -362,6 +370,13 @@ private:
     */
    const WaveClipConstHolders &GetClips() const
       { return reinterpret_cast< const WaveClipConstHolders& >( mClips ); }
+
+   /**
+    * @brief Get access to the (visible) clips in the tracks, in unspecified
+    * order.
+    * @pre `IsLeader()`
+    */
+   ClipConstHolders GetClipInterfaces() const;
 
    // Get mutative access to all clips (in some unspecified sequence),
    // including those hidden in cutlines.
@@ -567,6 +582,11 @@ private:
    //! Returns nullptr if clip with such name was not found
    const WaveClip* FindClipByName(const wxString& name) const;
  protected:
+
+   std::shared_ptr<::Channel> DoGetChannel(size_t iChannel) override;
+
+   Track &DoGetTrack() const override;
+
    //
    // Protected variables
    //
@@ -583,10 +603,12 @@ private:
 private:
    void SetClipRates(double newRate);
 
-   bool GetOne(samplePtr buffer, sampleFormat format,
-      sampleCount start, size_t len, fillFormat fill,
-      bool mayThrow, sampleCount * pNumWithinClips) const;
-   ChannelSampleView GetOneSampleView(sampleCount start, size_t len) const;
+   bool GetOne(
+      samplePtr buffer, sampleFormat format, sampleCount start, size_t len,
+      bool backwards, fillFormat fill, bool mayThrow,
+      sampleCount* pNumWithinClips) const;
+   ChannelSampleView
+   GetOneSampleView(sampleCount start, size_t len, bool backwards) const;
 
    void DoSetPan(float value);
    void DoSetGain(float value);
