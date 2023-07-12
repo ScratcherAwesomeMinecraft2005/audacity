@@ -592,7 +592,8 @@ private:
    //
 
    /*!
-    @invariant all are non-null and match `this->GetWidth()`
+    * Do not call `mClips.push_back` directly. Use `InsertClip` instead.
+    * @invariant all are non-null and match `this->GetWidth()`
     */
    WaveClipHolders mClips;
 
@@ -602,6 +603,8 @@ private:
 
 private:
    void SetClipRates(double newRate);
+   void DoOnProjectTempoChange(
+      const std::optional<double>& oldTempo, double newTempo) override;
 
    bool GetOne(
       samplePtr buffer, sampleFormat format, sampleCount start, size_t len,
@@ -617,6 +620,10 @@ private:
 
    //! Whether all clips have a common rate
    bool RateConsistencyCheck() const;
+
+   //! Sets project tempo on clip upon push. Use this instead of
+   //! `mClips.push_back`.
+   void InsertClip(WaveClipHolder clip);
 
    SampleBlockFactoryPtr mpFactory;
 
