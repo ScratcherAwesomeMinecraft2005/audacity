@@ -68,7 +68,7 @@ public:
    static const ProjectAudioManager &Get( const AudacityProject &project );
 
    //! Find suitable tracks to record into, or return an empty array.
-   //! Not always leader tracks
+   //! Returns channels not tracks, but always complete channel groups
    static WritableSampleTrackArray ChooseExistingRecordingTracks(
       AudacityProject &proj, bool selectedOnly,
       double targetRate = RATE_NOT_SELECTED);
@@ -188,7 +188,7 @@ struct PropertiesOfSelected
 {
    bool allSameRate{ false };
    int rateOfSelected{ RATE_NOT_SELECTED };
-   int numberOfSelected{ 0 };
+   bool anySelected{ false };
 };
 
 AUDACITY_DLL_API

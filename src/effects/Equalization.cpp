@@ -323,7 +323,8 @@ bool EffectEqualization::Init()
    double rate = 0.0;
 
    if (const auto project = FindProject()) {
-      auto trackRange = TrackList::Get(*project).Selected<const WaveTrack>();
+      auto trackRange =
+         TrackList::Get(*project).SelectedLeaders<const WaveTrack>();
       if (trackRange) {
          rate = (*(trackRange.first++)) -> GetRate();
          ++selcount;
@@ -476,7 +477,7 @@ bool EffectEqualization::ProcessOne(int count, WaveTrack * t,
    auto originalLen = len;
 
    auto &output = task.output;
-   t->ConvertToSampleFormat( floatSample );
+   output->ConvertToSampleFormat(floatSample);
 
    TrackProgress(count, 0.);
    bool bLoopSuccess = true;

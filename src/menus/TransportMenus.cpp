@@ -78,7 +78,7 @@ void DoMoveToLabel(AudacityProject &project, bool next)
    auto &projectAudioManager = ProjectAudioManager::Get(project);
 
    // Find the number of label tracks, and ptr to last track found
-   auto trackRange = tracks.Any<LabelTrack>();
+   auto trackRange = tracks.Leaders<LabelTrack>();
    auto lt = *trackRange.rbegin();
    auto nLabelTrack = trackRange.size();
 
@@ -88,7 +88,7 @@ void DoMoveToLabel(AudacityProject &project, bool next)
    else if (nLabelTrack > 1) {
       // find first label track, if any, starting at the focused track
       lt =
-         *tracks.Find(trackFocus.Get()).Filter<LabelTrack>();
+         *tracks.FindLeader(trackFocus.Get()).Filter<LabelTrack>();
       if (!lt)
          trackFocus.MessageForScreenReader(
             XO("no label track at or below focused track"));
@@ -264,14 +264,21 @@ void OnPunchAndRoll(const CommandContext &context)
    bool error = (t1 == 0.0);
 
    double newt1 = t1;
+   using Iterator =
+      ChannelGroup::IntervalIterator<const WideChannelGroupInterval>;
+   IteratorRange<Iterator> intervals{ {}, {} };
    for (const auto &wt : tracks) {
       auto rate = wt->GetRate();
       sampleCount testSample(floor(t1 * rate));
-      auto intervals = wt->GetIntervals();
+      if (wt->IsLeader())
+         intervals = as_const(*wt).Intervals();
+      else
+         // non-leader channel is assumed to have the same intervals
+         ;
       auto pred = [rate](sampleCount testSample){ return
-         [rate, testSample](const Track::Interval &interval){
-            auto start = floor(interval.Start() * rate + 0.5);
-            auto end = floor(interval.End() * rate + 0.5);
+         [rate, testSample](const auto &pInterval){
+            auto start = floor(pInterval->Start() * rate + 0.5);
+            auto end = floor(pInterval->End() * rate + 0.5);
             auto ts = testSample.as_double();
             return ts >= start && ts < end;
          };
@@ -290,7 +297,7 @@ void OnPunchAndRoll(const CommandContext &context)
          // May adjust t1 left
          // Let's ignore the possibility of a clip even shorter than the
          // crossfade duration!
-         newt1 = std::min(newt1, iter->End() - crossFadeDuration);
+         newt1 = std::min(newt1, (*iter).get()->End() - crossFadeDuration);
       }
    }
 
