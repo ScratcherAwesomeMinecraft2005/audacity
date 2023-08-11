@@ -273,10 +273,10 @@ private:
    bool                  mCancelled = false;     //!< True if importing was canceled by user
    bool                  mStopped = false;       //!< True if importing was stopped by user
    const FilePath        mName;
-   TrackHolders mChannels;               //!< 2-dimensional array of WaveTracks.
-                                         //!< First dimension - streams,
-                                         //!< After Import(), same size as mStreamContexts;
-                                         //!< second - channels of a stream.
+   std::vector<std::vector<WaveTrack::Holder>> mChannels; //!< 2-dimensional array of WaveTracks.
+      //!< First dimension - streams,
+      //!< After Import(), same size as mStreamContexts;
+      //!< second - channels of a stream.
 };
 
 
@@ -503,15 +503,13 @@ void FFmpegImportFileHandle::Import(ImportProgressListener& progressListener,
             s, (long long)streamStartTime, double(streamStartTime) / 1000);
       }
 
-      if (stream_delay > 0)
-      {
+      if (stream_delay > 0) {
          int c = -1;
-         for (auto &channel : stream)
-         {
+         for (auto &channel : stream) {
             ++c;
-
             WaveTrack *t = channel.get();
-            t->InsertSilence(0,double(stream_delay)/AUDACITY_AV_TIME_BASE);
+            assert(t->IsLeader()); // channels are not yet grouped
+            t->InsertSilence(0, double(stream_delay) / AUDACITY_AV_TIME_BASE);
          }
       }
    }
@@ -555,10 +553,8 @@ void FFmpegImportFileHandle::Import(ImportProgressListener& progressListener,
 
    // Copy audio from mChannels to newly created tracks (destroying mChannels elements in process)
    for (auto &stream : mChannels)
-      for(auto &channel : stream)
-         channel->Flush();
-
-   outTracks.swap(mChannels);
+      if (!stream.empty())
+         outTracks.push_back(ImportUtils::MakeTracks(stream));
 
    // Save metadata
    WriteMetadata(tags);

@@ -115,7 +115,7 @@ EffectEqualization::EffectEqualization(int Options)
 #if 0
    auto trackList = inputTracks();
    const auto t = trackList
-      ? *trackList->Leaders<const WaveTrack>().first
+      ? *trackList->Any<const WaveTrack>().first
       : nullptr
    ;
    hiFreq =
@@ -324,7 +324,7 @@ bool EffectEqualization::Init()
 
    if (const auto project = FindProject()) {
       auto trackRange =
-         TrackList::Get(*project).SelectedLeaders<const WaveTrack>();
+         TrackList::Get(*project).Selected<const WaveTrack>();
       if (trackRange) {
          rate = (*(trackRange.first++)) -> GetRate();
          ++selcount;
@@ -408,7 +408,7 @@ bool EffectEqualization::Process(EffectInstance &, EffectSettings &)
    bool bGoodResult = true;
 
    int count = 0;
-   for (auto track : outputs.Get().SelectedLeaders<WaveTrack>()) {
+   for (auto track : outputs.Get().Selected<WaveTrack>()) {
       double trackStart = track->GetStartTime();
       double trackEnd = track->GetEndTime();
       double t0 = mT0 < trackStart? trackStart: mT0;
@@ -426,7 +426,7 @@ bool EffectEqualization::Process(EffectInstance &, EffectSettings &)
             temp->Add(pNewChannel);
             assert(pNewChannel->IsLeader() == pChannel->IsLeader());
          }
-         auto pTempTrack = *temp->Leaders<WaveTrack>().rbegin();
+         auto pTempTrack = *temp->Any<WaveTrack>().begin();
          pTempTrack->ConvertToSampleFormat(floatSample);
          auto iter0 = TrackList::Channels(pTempTrack).begin();
    
@@ -447,8 +447,9 @@ bool EffectEqualization::Process(EffectInstance &, EffectSettings &)
             if (!bGoodResult)
                goto done;
          }
+         pTempTrack->Flush();
          PasteOverPreservingClips(data, *track, start, len,
-            **temp->Leaders<WaveTrack>().begin());
+            **temp->Any<WaveTrack>().begin());
       }
 
       count++;
@@ -541,8 +542,7 @@ bool EffectEqualization::ProcessOne(Task &task,
       }
    }
 
-   if(bLoopSuccess)
-   {
+   if (bLoopSuccess) {
       // M-1 samples of 'tail' left in lastWindow, get them now
       if(wcopy < (M - 1)) {
          // Still have some overlap left to process
@@ -559,7 +559,6 @@ bool EffectEqualization::ProcessOne(Task &task,
             buffer[j] = lastWindow[wcopy + j];
       }
       task.AccumulateSamples((samplePtr)buffer.get(), M - 1);
-      output.Flush();
    }
    return bLoopSuccess;
 }

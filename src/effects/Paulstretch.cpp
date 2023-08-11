@@ -151,7 +151,7 @@ bool EffectPaulstretch::Process(EffectInstance &, EffectSettings &)
    auto newT1 = mT1;
    int count = 0;
    // Process selected wave tracks first, to find the new t1 value
-   for (const auto track : outputs.Get().SelectedLeaders<WaveTrack>()) {
+   for (const auto track : outputs.Get().Selected<WaveTrack>()) {
       double trackStart = track->GetStartTime();
       double trackEnd = track->GetEndTime();
       double t0 = mT0 < trackStart ? trackStart : mT0;
@@ -163,11 +163,13 @@ bool EffectPaulstretch::Process(EffectInstance &, EffectSettings &)
             const auto outputTrack = ProcessOne(*pChannel, t0, t1, count++);
             if (!outputTrack)
                return false;
-            outputTrack->Flush();
             tempList->Add(outputTrack);
+            // because it was made by EmptyCopy():
+            assert(outputTrack->IsLeader() == pChannel->IsLeader());
          }
-         newT1 = std::max(newT1,
-            mT0 + (*tempList->Leaders().begin())->GetEndTime());
+         const auto pNewTrack = *tempList->Any<WaveTrack>().begin();
+         pNewTrack->Flush();
+         newT1 = std::max(newT1, mT0 + pNewTrack->GetEndTime());
          track->Clear(t0, t1);
          track->Paste(t0, *tempList);
       }
@@ -176,7 +178,7 @@ bool EffectPaulstretch::Process(EffectInstance &, EffectSettings &)
    }
 
    // Sync lock adjustment of other tracks
-   outputs.Get().Leaders().Visit(
+   outputs.Get().Any().Visit(
       [&](auto &&fallthrough){ return [&](WaveTrack &track) {
          if (!track.IsSelected())
             fallthrough();

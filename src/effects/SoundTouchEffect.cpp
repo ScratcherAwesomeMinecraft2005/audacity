@@ -94,7 +94,7 @@ bool EffectSoundTouch::ProcessWithTimeWarper(InitFunction initer,
    mCurTrackNum = 0;
    m_maxNewLength = 0.0;
 
-   outputs.Get().Leaders().VisitWhile(bGoodResult,
+   outputs.Get().Any().VisitWhile(bGoodResult,
       [&](auto &&fallthrough){ return [&](LabelTrack &lt) {
          if ( !(lt.GetSelected() ||
                 (mustSync && SyncLock::IsSyncLockSelected(&lt))) )
@@ -228,7 +228,6 @@ bool EffectSoundTouch::ProcessOne(soundtouch::SoundTouch *pSoundTouch,
          outputTrack->Append((samplePtr)buffer2.get(), floatSample, outputCount);
       }
 
-      // Flush the output WaveTrack (since it's buffered, too)
       outputTrack->Flush();
    }
 
@@ -328,9 +327,7 @@ bool EffectSoundTouch::ProcessStereo(soundtouch::SoundTouch *pSoundTouch,
          this->ProcessStereoResults(pSoundTouch,
             outputCount, outputLeftTrack.get(), outputRightTrack.get());
 
-      // Flush the output WaveTracks (since they're buffered, too)
       outputLeftTrack->Flush();
-      outputRightTrack->Flush();
    }
 
    // Transfer output samples to the original
@@ -374,8 +371,6 @@ void EffectSoundTouch::Finalize(
    assert(orig.IsLeader());
    assert(out.IsLeader());
    assert(out.NChannels() == orig.NChannels());
-   auto outChannels = TrackList::Channels(&out);
-   auto origChannels = TrackList::Channels(&orig);
    if (mPreserveLength) {
       auto newLen = out.GetPlaySamplesCount();
       auto oldLen = out.TimeToLongSamples(mT1) - out.TimeToLongSamples(mT0);
@@ -384,8 +379,7 @@ void EffectSoundTouch::Finalize(
       if (newLen < oldLen) {
          const auto t = out.LongSamplesToTime(newLen - 1);
          const auto len = out.LongSamplesToTime(oldLen - newLen);
-         for (auto pChannel : outChannels)
-            pChannel->InsertSilence(t, len);
+         out.InsertSilence(t, len);
       }
       // Trim output track to original length since SoundTouch may add extra samples
       else if (newLen > oldLen) {
