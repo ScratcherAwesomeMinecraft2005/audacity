@@ -44,8 +44,8 @@ public:
    ~ZoomInfo();
 
    // Be sure we don't slice
-   ZoomInfo(const ZoomInfo&) PROHIBITED;
-   ZoomInfo& operator= (const ZoomInfo&) PROHIBITED;
+   ZoomInfo(const ZoomInfo&) = delete;
+   ZoomInfo& operator= (const ZoomInfo&) = delete;
 
    int vpos;                    // vertical scroll pos
 
@@ -147,8 +147,7 @@ public:
    // It is guaranteed that there is at least one entry and the position of the
    // first entry equals origin.
    // @param origin specifies the pixel position corresponding to time ViewInfo::h.
-   void FindIntervals
-      (double rate, Intervals &results, int64 width, int64 origin = 0) const;
+   void FindIntervals(Intervals& results, int64 width, int64 origin = 0) const;
 
    enum FisheyeState {
       HIDDEN,

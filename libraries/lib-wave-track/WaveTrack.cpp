@@ -614,12 +614,12 @@ void WaveTrack::SetWaveColorIndex(int colorIndex)
    }
 }
 
-sampleCount WaveTrack::GetPlaySamplesCount() const
+sampleCount WaveTrack::GetVisibleSampleCount() const
 {
     sampleCount result{ 0 };
 
     for (const auto& clip : mClips)
-        result += clip->GetPlaySamplesCount();
+        result += clip->GetVisibleSampleCount();
 
     return result;
 }
@@ -2348,7 +2348,7 @@ bool WaveTrack::GetOne(
       {
          // Clip sample region and Get/Put sample region overlap
          auto samplesToCopy =
-            std::min( start+len - clipStart, clip->GetPlaySamplesCount() );
+            std::min( start+len - clipStart, clip->GetVisibleSampleCount() );
          auto startDelta = clipStart - start;
          decltype(startDelta) inclipDelta = 0;
          if (startDelta < 0)
@@ -2447,7 +2447,7 @@ ChannelSampleView WaveTrack::GetOneSampleView(
       const auto clipT0 = t0 - clipStartTime;
       const auto clipS0 = TimeToLongSamples(clipT0);
       const auto len =
-         limitSampleBufferSize(length, clip->GetPlaySamplesCount() - clipS0);
+         limitSampleBufferSize(length, clip->GetVisibleSampleCount() - clipS0);
       auto newSegment = clip->GetSampleView(0u, clipS0, len);
       t0 += newSegment.GetSampleCount().as_double() / GetRate();
       segments.push_back(std::move(newSegment));
@@ -2471,7 +2471,7 @@ void WaveTrack::Set(constSamplePtr buffer, sampleFormat format,
       {
          // Clip sample region and Get/Put sample region overlap
          auto samplesToCopy =
-            std::min( start+len - clipStart, clip->GetPlaySamplesCount() );
+            std::min( start+len - clipStart, clip->GetVisibleSampleCount() );
          auto startDelta = clipStart - start;
          decltype(startDelta) inclipDelta = 0;
          if (startDelta < 0)
@@ -2599,10 +2599,62 @@ void WaveTrack::GetEnvelopeValues(
 // latter clip is returned.
 WaveClip* WaveTrack::GetClipAtTime(double time)
 {
+   return const_cast<WaveClip*>(std::as_const(*this).GetClipAtTime(time));
+}
 
+const WaveClip* WaveTrack::GetNextClip(
+   const WaveClip& clip, PlaybackDirection direction) const
+{
    const auto clips = SortedClipArray();
-   auto p = std::find_if(clips.rbegin(), clips.rend(), [&] (WaveClip* const& clip) {
-      return time >= clip->GetPlayStartTime() && time <= clip->GetPlayEndTime(); });
+   const auto p = std::find(clips.begin(), clips.end(), &clip);
+   if (p == clips.end())
+      return nullptr;
+   else if (direction == PlaybackDirection::forward)
+      return p == clips.end() - 1 ? nullptr : *(p + 1);
+   else
+      return p == clips.begin() ? nullptr : *(p - 1);
+}
+
+WaveClip*
+WaveTrack::GetNextClip(const WaveClip& clip, PlaybackDirection direction)
+{
+   return const_cast<WaveClip*>(
+      std::as_const(*this).GetNextClip(clip, direction));
+}
+
+const WaveClip* WaveTrack::GetAdjacentClip(
+   const WaveClip& clip, PlaybackDirection direction) const
+{
+   const auto neighbour = GetNextClip(clip, direction);
+   if (!neighbour)
+      return nullptr;
+   else if (direction == PlaybackDirection::forward)
+      return std::abs(clip.GetPlayEndTime() - neighbour->GetPlayStartTime()) <
+                   1e-9 ?
+                neighbour :
+                nullptr;
+   else
+      return std::abs(clip.GetPlayStartTime() - neighbour->GetPlayEndTime()) <
+                   1e-9 ?
+                neighbour :
+                nullptr;
+}
+
+WaveClip*
+WaveTrack::GetAdjacentClip(const WaveClip& clip, PlaybackDirection direction)
+{
+   return const_cast<WaveClip*>(
+      std::as_const(*this).GetAdjacentClip(clip, direction));
+}
+
+const WaveClip* WaveTrack::GetClipAtTime(double time) const
+{
+   const auto clips = SortedClipArray();
+   auto p = std::find_if(
+      clips.rbegin(), clips.rend(), [&](const WaveClip* const& clip) {
+         return time >= clip->GetPlayStartTime() &&
+                time <= clip->GetPlayEndTime();
+      });
 
    // When two clips are immediately next to each other, the GetPlayEndTime() of the first clip
    // and the GetPlayStartTime() of the second clip may not be exactly equal due to rounding errors.
