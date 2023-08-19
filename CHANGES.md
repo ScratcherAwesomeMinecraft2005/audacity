@@ -25,4 +25,4 @@
 
 ### Truncate Silence
 
-- [Lowered minimum threshold to -145 dB](https://github.com/somefoolouthere/audacity/blob/master/src/effects/TruncSilence.h#124)
+- [Adjusted minimum and maximum thresholds to -145 dB to -6 dB](https://github.com/somefoolouthere/audacity/blob/master/src/effects/TruncSilence.h#124)

@@ -132,7 +132,7 @@ private:
    static const EnumValueSymbol kActionStrings[nActions];
 
 static constexpr EffectParameter Threshold{ &EffectTruncSilence::mThresholdDB,
-   L"Threshold",  -20.0,      -145.0,   -20.0,                     1  };
+   L"Threshold",  -20.0,      -145.0,   -6.0,                     1  };
 static constexpr EnumParameter ActIndex{ &EffectTruncSilence::mActionIndex,
    L"Action",     (int)kTruncate,  0,       nActions - 1,           1, kActionStrings, nActions };
 static constexpr EffectParameter Minimum{ &EffectTruncSilence::mInitialAllowedSilence,
