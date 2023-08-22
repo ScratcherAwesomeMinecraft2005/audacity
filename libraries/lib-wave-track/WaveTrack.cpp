@@ -61,6 +61,8 @@ from the project that will own the track.
 
 using std::max;
 
+WaveChannelInterval::~WaveChannelInterval() = default;
+
 WaveTrack::Interval::Interval(const ChannelGroup &group,
    const std::shared_ptr<WaveClip> &pClip,
    const std::shared_ptr<WaveClip> &pClip1
@@ -76,8 +78,13 @@ WaveTrack::Interval::~Interval() = default;
 std::shared_ptr<ChannelInterval>
 WaveTrack::Interval::DoGetChannel(size_t iChannel)
 {
-   if (iChannel < NChannels())
-      return std::make_shared<ChannelInterval>();
+   if (iChannel < NChannels()) {
+      const auto pClip = (iChannel == 0 ? mpClip : mpClip1);
+      return std::make_shared<WaveChannelInterval>(
+         *pClip,
+         // Always the left clip's envelope
+         *mpClip->GetEnvelope());
+   }
    return {};
 }
 
@@ -198,6 +205,8 @@ Track::LinkType ToLinkType(int value)
 
 static auto DefaultName = XO("Audio");
 
+WaveChannel::~WaveChannel() = default;
+
 wxString WaveTrack::GetDefaultAudioTrackNamePreference()
 {
    const auto name = AudioTrackNameSetting.ReadWithDefault(L"");
@@ -308,7 +317,7 @@ void WaveTrack::Reinit(const WaveTrack &orig)
       pChannel->Init(**iter);
 
       // Copy attached data from orig.  Nullify data in this where orig had null.
-      Attachments &attachments = *pChannel;
+      SampleTrack::Attachments &attachments = *pChannel;
       attachments = **iter;
       ++iter;
    }
@@ -318,7 +327,7 @@ void WaveTrack::Merge(const Track &orig)
 {
    orig.TypeSwitch( [&](const WaveTrack &wt) {
       // Copy attached data from orig.  Nullify data in this where orig had null.
-      Attachments &attachments = *this;
+      SampleTrack::Attachments &attachments = *this;
       attachments = wt;
    });
 }
@@ -443,7 +452,7 @@ WaveTrack::DoGetInterval(size_t iInterval)
          pClip1;
       // TODO wide wave tracks
       // This assumed correspondence of clips may be wrong if they misalign
-      if (auto right = GetChannel<WaveTrack>(1)
+      if (auto right = ChannelGroup::GetChannel<WaveTrack>(1)
          ; right && iInterval < right->mClips.size()
       )
          pClip1 = right->mClips[iInterval];
@@ -479,6 +488,15 @@ std::shared_ptr<::Channel> WaveTrack::DoGetChannel(size_t iChannel)
 ChannelGroup &WaveTrack::DoGetChannelGroup() const
 {
    const ChannelGroup &group = *this;
+   return const_cast<ChannelGroup&>(group);
+}
+
+ChannelGroup &WaveTrack::ReallyDoGetChannelGroup() const
+{
+   const Track *pTrack = this;
+   if (const auto pOwner = GetOwner())
+      pTrack = *pOwner->Find(this);
+   const ChannelGroup &group = *pTrack;
    return const_cast<ChannelGroup&>(group);
 }
 
@@ -1882,11 +1900,11 @@ void WaveTrack::JoinOne(WaveTrack &track, double t0, double t1)
 /*! @excsafety{Partial}
 -- Some prefix (maybe none) of the buffer is appended,
 and no content already flushed to disk is lost. */
-bool WaveTrack::Append(constSamplePtr buffer, sampleFormat format,
+bool WaveChannel::Append(constSamplePtr buffer, sampleFormat format,
    size_t len, unsigned int stride, sampleFormat effectiveFormat)
 {
    constSamplePtr buffers[]{ buffer };
-   return RightmostOrNewClip()
+   return GetTrack().RightmostOrNewClip()
       ->Append(buffers, format, len, stride, effectiveFormat);
 }
 
@@ -2195,7 +2213,7 @@ double WaveTrack::GetEndTime() const
 // expressed relative to t=0.0 at the track's sample rate.
 //
 
-std::pair<float, float> WaveTrack::GetMinMax(
+std::pair<float, float> WaveChannel::GetMinMax(
    double t0, double t1, bool mayThrow) const
 {
    std::pair<float, float> results {
@@ -2213,7 +2231,7 @@ std::pair<float, float> WaveTrack::GetMinMax(
    if (t0 == t1)
       return results;
 
-   for (const auto &clip: mClips)
+   for (const auto &clip: GetTrack().mClips)
    {
       if (t1 >= clip->GetPlayStartTime() && t0 <= clip->GetPlayEndTime())
       {
@@ -2235,7 +2253,7 @@ std::pair<float, float> WaveTrack::GetMinMax(
    return results;
 }
 
-float WaveTrack::GetRMS(double t0, double t1, bool mayThrow) const
+float WaveChannel::GetRMS(double t0, double t1, bool mayThrow) const
 {
    if (t0 > t1) {
       if (mayThrow)
@@ -2249,7 +2267,7 @@ float WaveTrack::GetRMS(double t0, double t1, bool mayThrow) const
    double sumsq = 0.0;
    sampleCount length = 0;
 
-   for (const auto &clip: mClips)
+   for (const auto &clip: GetTrack().mClips)
    {
       // If t1 == clip->GetStartTime() or t0 == clip->GetEndTime(), then the clip
       // is not inside the selection, so we don't want it.
@@ -2285,7 +2303,8 @@ bool WaveTrack::Get(size_t iChannel, size_t nBuffers,
    std::optional<TrackIter<const WaveTrack>> iter;
    auto pTrack = this;
    if (pOwner) {
-      iter.emplace(TrackList::Channels(this).first.advance(iChannel));
+      const auto ppLeader = TrackList::Channels(this).first;
+      iter.emplace(ppLeader.advance(IsLeader() ? iChannel : 1));
       pTrack = **iter;
    }
    return std::all_of(buffers, buffers + nBuffers, [&](samplePtr buffer) {
@@ -2402,7 +2421,8 @@ std::vector<ChannelSampleView> WaveTrack::GetSampleView(
    std::optional<TrackIter<const WaveTrack>> iter;
    auto pTrack = this;
    if (pOwner) {
-      iter.emplace(TrackList::Channels(this).first.advance(iChannel));
+      const auto ppLeader = TrackList::Channels(this).first;
+      iter.emplace(ppLeader.advance(IsLeader() ? iChannel : 1));
       pTrack = **iter;
    }
    for (auto i = 0u; i < nBuffers; ++i)
@@ -2459,10 +2479,10 @@ ChannelSampleView WaveTrack::GetOneSampleView(
 }
 
 /*! @excsafety{Weak} */
-void WaveTrack::Set(constSamplePtr buffer, sampleFormat format,
+void WaveChannel::Set(constSamplePtr buffer, sampleFormat format,
    sampleCount start, size_t len, sampleFormat effectiveFormat)
 {
-   for (const auto &clip: mClips)
+   for (const auto &clip: GetTrack().mClips)
    {
       auto clipStart = clip->GetPlayStartSample();
       auto clipEnd = clip->GetPlayEndSample();
@@ -2519,7 +2539,11 @@ sampleFormat WaveTrack::WidestEffectiveFormat() const
 
 bool WaveTrack::HasTrivialEnvelope() const
 {
-   auto &clips = GetClips();
+   auto pTrack = this;
+   if (GetOwner())
+      // Substitute the leader track
+      pTrack = *TrackList::Channels(this).begin();
+   auto &clips = pTrack->GetClips();
    return std::all_of(clips.begin(), clips.end(),
       [](const auto &pClip){ return pClip->GetEnvelope()->IsTrivial(); });
 }
@@ -2527,6 +2551,11 @@ bool WaveTrack::HasTrivialEnvelope() const
 void WaveTrack::GetEnvelopeValues(
    double* buffer, size_t bufferLen, double t0, bool backwards) const
 {
+   auto pTrack = this;
+   if (GetOwner())
+      // Substitute the leader track
+      pTrack = *TrackList::Channels(this).begin();
+
    if (backwards)
       t0 -= bufferLen / GetRate();
    // The output buffer corresponds to an unbroken span of time which the callers expect
@@ -2548,7 +2577,7 @@ void WaveTrack::GetEnvelopeValues(
    const auto rate = GetRate();
    auto tstep = 1.0 / rate;
    double endTime = t0 + tstep * bufferLen;
-   for (const auto &clip: mClips)
+   for (const auto &clip: pTrack->mClips)
    {
       // IF clip intersects startTime..endTime THEN...
       auto dClipStartTime = clip->GetPlayStartTime();
@@ -2672,7 +2701,11 @@ const WaveClip* WaveTrack::GetClipAtTime(double time) const
 
 Envelope* WaveTrack::GetEnvelopeAtTime(double time)
 {
-   WaveClip* clip = GetClipAtTime(time);
+   auto pTrack = this;
+   if (GetOwner())
+      // Substitute the leader track
+      pTrack = *TrackList::Channels(this).begin();
+   WaveClip* clip = pTrack->GetClipAtTime(time);
    if (clip)
       return clip->GetEnvelope();
    else
