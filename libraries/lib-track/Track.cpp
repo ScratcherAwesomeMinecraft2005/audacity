@@ -42,7 +42,6 @@ Track::Track()
 }
 
 Track::Track(const Track& orig, ProtectedCreationArg&&)
-    : mProjectTempo { orig.mProjectTempo }
 {
    mIndex = 0;
 }
@@ -183,7 +182,7 @@ Track::ChannelGroupData &Track::MakeGroupData()
 Track::ChannelGroupData &Track::GetGroupData()
 {
    auto pTrack = this;
-   if (auto pList = GetOwner())
+   if (auto pList = GetHolder())
       if (auto pLeader = *pList->Find(pTrack))
          pTrack = pLeader;
    // May make on demand
@@ -1006,7 +1005,7 @@ TrackList::RegisterPendingChangedTrack(Updater updater, Track *src)
    std::vector<Track*> result;
    if (src) {
       tracks = src->Clone(); // not duplicate
-      assert(NChannels() == tracks->NChannels());
+      assert(src->NChannels() == tracks->NChannels());
    }
    if (src) {
       // Share the satellites with the original, though they do not point back
@@ -1384,13 +1383,14 @@ bool ChannelAttachmentsBase::HandleXMLAttribute(
 void Track::OnProjectTempoChange(double newTempo)
 {
    assert(IsLeader());
+   auto &mProjectTempo = GetGroupData().mProjectTempo;
    DoOnProjectTempoChange(mProjectTempo, newTempo);
    mProjectTempo = newTempo;
 }
 
 const std::optional<double>& Track::GetProjectTempo() const
 {
-   return mProjectTempo;
+   return GetGroupData().mProjectTempo;
 }
 
 // Undo/redo handling of selection changes
