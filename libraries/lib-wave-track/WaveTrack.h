@@ -311,6 +311,8 @@ private:
    //
 
    double GetRate() const override;
+   ///!brief Sets the new rate for the track without resampling it
+   ///!pre newRate > 0
    void SetRate(double newRate);
 
    // Multiplicative factor.  Only converted to dB for display.
@@ -349,7 +351,7 @@ private:
     */
    size_t CountBlocks() const;
 
-   sampleFormat GetSampleFormat() const override { return mFormat; }
+   sampleFormat GetSampleFormat() const override;
 
    /*!
     @pre `IsLeader()`
@@ -482,9 +484,11 @@ private:
 
    void Flush() override;
 
+   bool IsLeader() const override;
+
    //! @name PlayableSequence implementation
    //! @{
-   bool IsLeader() const override;
+   const ChannelGroup *FindChannelGroup() const override;
    bool GetMute() const override;
    bool GetSolo() const override;
    //! @}
@@ -801,15 +805,21 @@ private:
    // clipidx1 and clipidx2 are indices into the clip list.
    void MergeClips(int clipidx1, int clipidx2);
 
-   // Expand cut line (that is, re-insert audio, then DELETE audio saved in cut line)
-   void ExpandCutLine(double cutLinePosition, double* cutlineStart = NULL, double* cutlineEnd = NULL);
+   //! Expand cut line (that is, re-insert audio, then delete audio saved in
+   //! cut line)
+   /*
+    @pre `IsLeader()`
+    @param[out] cutlineStart start time of the insertion
+    @param[out] cutlineEnd end time of the insertion
+    */
+   void ExpandCutLine(double cutLinePosition,
+      double* cutlineStart = nullptr, double* cutlineEnd = nullptr);
 
-   // Remove cut line, without expanding the audio in it
+   //! Remove cut line, without expanding the audio in it
+   /*
+    @pre `IsLeader()`
+    */
    bool RemoveCutLine(double cutLinePosition);
-
-   // This track has been merged into a stereo track.  Copy shared parameters
-   // from the NEW partner.
-   void Merge(const Track &orig);
 
    // Resample track (i.e. all clips in the track)
    void Resample(int rate, BasicUI::ProgressDialog *progress = NULL);
@@ -900,6 +910,9 @@ private:
       sampleCount start, sampleCount len, sampleCount originalStart,
       sampleCount originalEnd, const ProgressReport &report = {});
    void SplitAt(double t) /* not override */;
+   void ExpandOneCutLine(double cutLinePosition,
+      double* cutlineStart, double* cutlineEnd);
+   void MergeOneClipPair(int clipidx1, int clipidx2);
 
    std::shared_ptr<WideChannelGroupInterval> DoGetInterval(size_t iInterval)
       override;
@@ -918,10 +931,12 @@ private:
     */
    WaveClipHolders mClips;
 
-   sampleFormat  mFormat;
-   mutable int   mLegacyRate{ 0 }; //!< used only during deserialization
+   mutable int  mLegacyRate{ 0 }; //!< used only during deserialization
+   sampleFormat mLegacyFormat; //!< used only during deserialization
 
 private:
+   //Updates rate parameter only in WaveTrackData
+   void DoSetRate(double newRate);
    void SetClipRates(double newRate);
    void DoOnProjectTempoChange(
       const std::optional<double>& oldTempo, double newTempo) override;
@@ -947,6 +962,11 @@ private:
     @pre `IsLeader()`
     */
    bool RateConsistencyCheck() const;
+   //! Whether all tracks in group and all clips have a common sample format
+   /*!
+    @pre `IsLeader()`
+    */
+   bool FormatConsistencyCheck() const;
 
    //! Sets project tempo on clip upon push. Use this instead of
    //! `mClips.push_back`.

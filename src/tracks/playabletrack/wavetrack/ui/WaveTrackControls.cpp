@@ -43,10 +43,7 @@ Paul Licameli split from TrackPanel.cpp
 #include <wx/frame.h>
 #include <wx/sizer.h>
 
-WaveTrackControls::~WaveTrackControls()
-{
-}
-
+WaveTrackControls::~WaveTrackControls() = default;
 
 std::vector<UIHandlePtr> WaveTrackControls::HitTest
 (const TrackPanelMouseState & st,
@@ -318,6 +315,7 @@ struct RateMenuTable : PopupMenuTable
    PlayableTrackControls::InitMenuData *mpData{};
 
    static int IdOfRate(int rate);
+   /// Sets the sample rate for a track
    void SetRate(WaveTrack * pTrack, double rate);
 
    void OnRateChange(wxCommandEvent & event);
@@ -378,13 +376,10 @@ int RateMenuTable::IdOfRate(int rate)
    return OnRateOtherID;
 }
 
-/// Sets the sample rate for a track, and if it is linked to
-/// another track, that one as well.
 void RateMenuTable::SetRate(WaveTrack * pTrack, double rate)
 {
    AudacityProject *const project = &mpData->project;
-   for (auto channel : TrackList::Channels(pTrack))
-      channel->SetRate(rate);
+   pTrack->SetRate(rate);
 
    // Separate conversion of "rate" enables changing the decimals without affecting i18n
    wxString rateString = wxString::Format(wxT("%.3f"), rate);
@@ -762,15 +757,22 @@ void WaveTrackMenuTable::OnMergeStereo(wxCommandEvent &)
            .IconStyle(Icon::Error));
       return;
    }
+   if(pTrack->GetSampleFormat() != partner->GetSampleFormat())
+   {
+      BasicUI::ShowMessageBox(XO(
+"Mono tracks must have the same sample format in order to be combined "
+"into a stereo track"),
+         BasicUI::MessageBoxOptions{}
+            .Caption(XO("Error"))
+            .IconStyle(BasicUI::Icon::Error));
+      return;
+   }
 
    bool bBothMinimizedp =
       ((ChannelView::Get(*pTrack->GetChannel(0)).GetMinimized()) &&
        (ChannelView::Get(*partner->GetChannel(0)).GetMinimized()));
 
    tracks.MakeMultiChannelTrack( *pTrack, 2, false );
-
-   // Set partner's parameters to match target.
-   partner->Merge(*pTrack);
 
    pTrack->SetPan( 0.0f );
 
