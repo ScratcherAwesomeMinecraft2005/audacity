@@ -824,17 +824,17 @@ BaseItemSharedPtr TransportMenu()
             Section( "Part1",
                // Sound Activated recording options
                Command( wxT("SoundActivationLevel"),
-                  XXO("Sound Activation Le&vel..."), OnSoundActivated,
+                  XXO("Set sound activation le&vel..."), OnSoundActivated,
                   AudioIONotBusyFlag() | CanStopAudioStreamFlag() ),
                Command( wxT("SoundActivation"),
-                  XXO("Sound A&ctivated Recording (on/off)"),
+                  XXO("Enable sound a&ctivated recording"),
                   OnToggleSoundActivated,
                   AudioIONotBusyFlag() | CanStopAudioStreamFlag(),
                   Options{}.CheckTest(SoundActivatedRecord) )
             ),
 
             Section( "Part2",
-               Command( wxT("Overdub"), XXO("&Overdub (on/off)"),
+               Command( wxT("Overdub"), XXO("Hear &other tracks during recording"),
                   OnTogglePlayRecording,
                   AudioIONotBusyFlag() | CanStopAudioStreamFlag(),
                   Options{}.CheckTest( wxT("/AudioIO/Duplex"),
@@ -844,7 +844,7 @@ BaseItemSharedPtr TransportMenu()
                      true
 #endif
                   ) ),
-               Command( wxT("SWPlaythrough"), XXO("So&ftware Playthrough (on/off)"),
+               Command( wxT("SWPlaythrough"), XXO("Enable audible input &monitoring"),
                   OnToggleSWPlaythrough,
                   AudioIONotBusyFlag() | CanStopAudioStreamFlag(),
                   Options{}.CheckTest( wxT("/AudioIO/SWPlaythrough"), false ) )

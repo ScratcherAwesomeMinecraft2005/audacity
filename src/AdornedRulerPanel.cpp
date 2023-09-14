@@ -2285,7 +2285,7 @@ void AdornedRulerPanel::ShowMenu(const wxPoint & pos)
 
    rulerMenu.AppendSeparator();
 
-   auto pDrag = rulerMenu.AppendCheckItem(OnSyncQuickPlaySelID, _("Enable dragging selection"));
+   auto pDrag = rulerMenu.AppendCheckItem(OnSyncQuickPlaySelID, _("Setting a loop region also makes an audio selection"));
    pDrag->Check(mPlayRegionDragsSelection && playRegion.Active());
    pDrag->Enable(playRegion.Active());
 
@@ -2919,7 +2919,7 @@ using namespace MenuTable;
 using Options = CommandManager::Options;
 AttachedItem sAttachment{
    { wxT("Transport/Other/Options/Part2"), { OrderingHint::Begin, {} } },
-   Command( wxT("PinnedHead"), XXO("Pinned Play/Record &Head (on/off)"),
+   Command( wxT("PinnedHead"), XXO("Enable pinned play &head"),
       OnTogglePinnedHead,
       // Switching of scrolling on and off is permitted
       // even during transport
