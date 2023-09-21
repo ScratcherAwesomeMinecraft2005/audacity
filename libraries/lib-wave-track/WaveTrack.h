@@ -50,6 +50,9 @@ using WaveClipConstPointers = std::vector < const WaveClip* >;
 using ChannelSampleView = std::vector<AudioSegmentSampleView>;
 using ChannelGroupSampleView = std::vector<ChannelSampleView>;
 
+using TimeInterval = std::pair<double, double>;
+using ProgressReporter = std::function<void(double)>;
+
 //
 // Tolerance for merging wave tracks (in seconds)
 //
@@ -169,7 +172,7 @@ public:
    ChannelSampleView GetSampleView(double t0, double t1, bool mayThrow) const;
 
    //! Random-access assignment of a range of samples
-   void Set(constSamplePtr buffer, sampleFormat format,
+   [[nodiscard]] bool Set(constSamplePtr buffer, sampleFormat format,
       sampleCount start, size_t len,
       sampleFormat effectiveFormat = widestSampleFormat /*!<
          Make the effective format of the data at least the minumum of this
@@ -278,7 +281,7 @@ public:
     @pre `NChannels() == orig.NChannels()`
     */
    void Reinit(const WaveTrack &orig);
-private:
+ private:
    void Init(const WaveTrack &orig);
 
    TrackListHolder Clone() const override;
@@ -433,7 +436,7 @@ private:
          preserve, merge, effectWarper);
    }
 
-   void Silence(double t0, double t1) override;
+   void Silence(double t0, double t1, ProgressReporter reportProgress) override;
    void InsertSilence(double t, double len) override;
 
    /*!
@@ -472,6 +475,16 @@ private:
     @pre `IsLeader()`
     */
    void Trim(double t0, double t1) /* not override */;
+
+   /*
+    * @param interval Entire track is rendered if nullopt, else only samples
+    * within [interval->first, interval->second), in which case clips are split
+    * at these boundaries before rendering - if rendering is needed.
+    *
+    * @pre `!interval.has_value() || interval->first <= interval->second`
+    */
+   void ApplyStretchRatio(
+      std::optional<TimeInterval> interval, ProgressReporter reportProgress);
 
    void SyncLockAdjust(double oldT1, double newT1) override;
 
@@ -754,6 +767,7 @@ private:
 
    // Get number of clips in this WaveTrack
    int GetNumClips() const;
+   int GetNumClips(double t0, double t1) const;
 
    // Add all wave clips to the given array 'clips' and sort the array by
    // clip start time. The array is emptied prior to adding the clips.
@@ -803,7 +817,7 @@ private:
    // Merge two clips, that is append data from clip2 to clip1,
    // then remove clip2 from track.
    // clipidx1 and clipidx2 are indices into the clip list.
-   void MergeClips(int clipidx1, int clipidx2);
+   bool MergeClips(int clipidx1, int clipidx2);
 
    //! Expand cut line (that is, re-insert audio, then delete audio saved in
    //! cut line)
@@ -853,18 +867,28 @@ private:
       void SetPlayStartTime(double time);
       double GetPlayStartTime() const;
 
+      double GetStretchRatio() const;
+
+      sampleCount TimeToSamples(double time) const;
+      double SamplesToTime(sampleCount s) const;
+
       auto GetChannel(size_t iChannel) { return
-         WideChannelGroupInterval::GetChannel<WaveChannel>(iChannel); }
+         WideChannelGroupInterval::GetChannel<WaveChannelInterval>(iChannel); }
       auto GetChannel(size_t iChannel) const { return
-         WideChannelGroupInterval::GetChannel<const WaveChannel>(iChannel); }
+         WideChannelGroupInterval::GetChannel<const WaveChannelInterval>(iChannel); }
 
       auto Channels() { return
-         WideChannelGroupInterval::Channels<WaveChannel>(); }
+         WideChannelGroupInterval::Channels<WaveChannelInterval>(); }
+
       auto Channels() const { return
-         WideChannelGroupInterval::Channels<const WaveChannel>();
-      }
+         WideChannelGroupInterval::Channels<const WaveChannelInterval>(); }
 
       bool IsPlaceholder() const;
+
+      void TrimLeftTo(double t);
+      void TrimRightTo(double t);
+      void StretchLeftTo(double t);
+      void StretchRightTo(double t);
 
       std::shared_ptr<const WaveClip> GetClip(size_t iChannel) const
       { return iChannel == 0 ? mpClip : mpClip1; }
@@ -880,6 +904,17 @@ private:
       //! TODO wide wave tracks: eliminate this
       const std::shared_ptr<WaveClip> mpClip1;
    };
+
+
+   ///@return Interval that starts after(before) the beginning of the passed interval
+   std::shared_ptr<const Interval>
+   GetNextInterval(const Interval& interval, PlaybackDirection searchDirection) const;
+
+   /*!
+    * @copydoc GetNextInterval(const Interval&, PlaybackDirection) const
+    */
+   std::shared_ptr<Interval>
+   GetNextInterval(const Interval& interval, PlaybackDirection searchDirection);
 
    auto Intervals() { return ChannelGroup::Intervals<Interval>(); }
    auto Intervals() const { return ChannelGroup::Intervals<const Interval>(); }
@@ -912,7 +947,7 @@ private:
    void SplitAt(double t) /* not override */;
    void ExpandOneCutLine(double cutLinePosition,
       double* cutlineStart, double* cutlineEnd);
-   void MergeOneClipPair(int clipidx1, int clipidx2);
+   bool MergeOneClipPair(int clipidx1, int clipidx2);
 
    std::shared_ptr<WideChannelGroupInterval> DoGetInterval(size_t iInterval)
       override;
@@ -971,6 +1006,9 @@ private:
    //! Sets project tempo on clip upon push. Use this instead of
    //! `mClips.push_back`.
    void InsertClip(WaveClipHolder clip);
+
+   void ApplyStretchRatioOne(
+      double t0, double t1, const ProgressReporter& reportProgress);
 
    SampleBlockFactoryPtr mpFactory;
 

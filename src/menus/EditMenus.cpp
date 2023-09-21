@@ -31,6 +31,7 @@
 #include "../AudioPasteDialog.h"
 #include "BasicUI.h"
 #include "Sequence.h"
+#include "UserException.h"
 
 // private helper classes and functions
 namespace {
@@ -124,7 +125,7 @@ void DoPasteNothingSelected(AudacityProject &project, const TrackList& src, doub
    auto &selectedRegion = ViewInfo::Get( project ).selectedRegion;
    auto &viewInfo = ViewInfo::Get( project );
    auto &window = ProjectWindow::Get( project );
-   
+
    assert(tracks.Selected().empty());
 
    Track* pFirstNewTrack = NULL;
@@ -392,7 +393,7 @@ void OnCopy(const CommandContext &context)
 std::pair<double, double> FindSelection(const CommandContext &context)
 {
    double sel0 = 0.0, sel1 = 0.0;
-   
+
 #if 0
    // Use the overriding selection if any was given in the context
    if (auto *pRegion = context.temporarySelection.pSelectedRegion) {
@@ -407,7 +408,7 @@ std::pair<double, double> FindSelection(const CommandContext &context)
       sel0 = selectedRegion.t0();
       sel1 = selectedRegion.t1();
    }
-   
+
    return { sel0, sel1 };
 }
 
@@ -434,7 +435,7 @@ std::shared_ptr<const TrackList> FindSourceTracks(const CommandContext &context)
       else if(waveClipCopyPolicy == wxT("Discard"))
          discardTrimmed = true;
    }
-   
+
    std::shared_ptr<const TrackList> srcTracks;
    if(discardTrimmed)
       srcTracks = DuplicateDiscardTrimmed(clipboard.GetTracks());
@@ -738,8 +739,27 @@ void OnSilence(const CommandContext &context)
    auto &tracks = TrackList::Get(project);
    auto &selectedRegion = ViewInfo::Get(project).selectedRegion;
 
-   for (auto n : tracks.Selected<WaveTrack>())
-      n->Silence(selectedRegion.t0(), selectedRegion.t1());
+   using namespace BasicUI;
+   const auto selectedWaveTracks = tracks.Selected<WaveTrack>();
+   // TODO replace this with utilities pending in
+   // https://github.com/audacity/audacity/pull/5043
+   auto progress = MakeProgress(
+      XO("Pre-processing"), XO("Rendering Time-Stretched Audio"),
+      ProgressShowCancel);
+   const auto numTracks = selectedWaveTracks.size();
+   auto count = 0;
+   auto reportProgress = [&](double progressFraction) {
+      const auto overallProgress = (count + progressFraction) / numTracks;
+      if (
+         progress->Poll(overallProgress * 1000, 1000) !=
+         ProgressResult::Success)
+         throw UserException{};
+   };
+   for (auto n : selectedWaveTracks)
+   {
+      n->Silence(selectedRegion.t0(), selectedRegion.t1(), reportProgress);
+      ++count;
+   }
 
    ProjectHistory::Get(project).PushState(
       XO("Silenced selected tracks for %.2f seconds at %.2f")
@@ -849,10 +869,8 @@ void OnSplitNew(const CommandContext &context)
          [&](WaveTrack &wt) {
             // Clips must be aligned to sample positions or the NEW clip will
             // not fit in the gap where it came from
-            double newt0 = wt.LongSamplesToTime(wt.TimeToLongSamples(
-               selectedRegion.t0()));
-            double newt1 = wt.LongSamplesToTime(wt.TimeToLongSamples(
-               selectedRegion.t1()));
+            const double newt0 = wt.SnapToSample(selectedRegion.t0());
+            const double newt1 = wt.SnapToSample(selectedRegion.t1());
             // Fix issue 2846 by calling copy with forClipboard = false.
             // This avoids creating the blank placeholder clips
             const auto dest = wt.Copy(newt0, newt1, false);
@@ -1036,7 +1054,7 @@ BaseItemSharedPtr EditMenu()
 
          Command( wxT("Redo"), XXO("&Redo"), OnRedo,
             AudioIONotBusyFlag() | RedoAvailableFlag(), redoKey ),
-            
+
          Special( wxT("UndoItemsUpdateStep"),
          [](AudacityProject &project, wxMenu&) {
             // Change names in the CommandManager as a side-effect
@@ -1089,7 +1107,7 @@ BaseItemSharedPtr EditMenu()
             )
          )
       ),
-        
+
 
       Section( "Other",
       //////////////////////////////////////////////////////////////////////////

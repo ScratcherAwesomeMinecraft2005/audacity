@@ -51,6 +51,8 @@ using ListOfTracks = std::list< std::shared_ptr< Track > >;
 using TrackNodePointer =
 std::pair< ListOfTracks::iterator, ListOfTracks* >;
 
+using ProgressReporter = std::function<void(double)>;
+
 inline bool operator == (const TrackNodePointer &a, const TrackNodePointer &b)
 { return a.second == b.second && a.first == b.first; }
 
@@ -254,8 +256,6 @@ public:
    inline TrackList* GetHolder() const;
 
    LinkType GetLinkType() const noexcept;
-   //! Returns true if the leader track has link type LinkType::Aligned
-   bool IsAlignedWithLeader() const;
 
    ChannelGroupData &GetGroupData();
    //! May make group data on demand, but consider that logically const
@@ -383,7 +383,8 @@ public:
    /*!
     @pre `IsLeader()`
     */
-   virtual void Silence(double t0, double t1) = 0;
+   virtual void
+   Silence(double t0, double t1, ProgressReporter reportProgress = {}) = 0;
 
    /*!
     May assume precondition: t0 <= t1
@@ -395,6 +396,9 @@ private:
    //! Subclass responsibility implements only a part of Duplicate(), copying
    //! the track data proper (not associated data such as for groups and views)
    /*!
+    @param unstretchInterval If set, this time interval's stretching must be applied.
+    @pre `!unstretchInterval.has_value() ||
+       unstretchInterval->first < unstretchInterval->second`
     @pre `IsLeader()`
     @post result: `NChannels() == result->NChannels()`
     */
@@ -583,7 +587,7 @@ public:
     @tparam F returns a shared pointer to Attachment (or some subtype of it)
 
     @pre `f` never returns null
-   
+
     `f` may assume the precondition that the given channel index is less than
     the given track's number of channels
     */

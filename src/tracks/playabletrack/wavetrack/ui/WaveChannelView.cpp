@@ -1476,12 +1476,10 @@ WaveChannelView::GetAllSubViews()
 
 std::shared_ptr<CommonTrackCell> WaveChannelView::GetAffordanceControls()
 {
-    auto track = FindTrack();
-    if (!track->IsAlignedWithLeader())
-    {
-        return DoGetAffordance(track);
-    }
-    return {};
+   auto track = FindTrack();
+   if (track->IsLeader())
+      return DoGetAffordance(track);
+   return {};
 }
 
 void WaveChannelView::DoSetMinimized(bool minimized)
@@ -1705,7 +1703,11 @@ std::weak_ptr<WaveClip> WaveChannelView::GetSelectedClip()
 {
    if (auto affordance = std::dynamic_pointer_cast<WaveTrackAffordanceControls>(GetAffordanceControls()))
    {
-      return affordance->GetSelectedClip();
+      assert(GetChannelIndex() == 0);
+      if(auto interval = *affordance->GetSelectedInterval())
+      {
+         return interval->GetClip(0);
+      }
    }
    return {};
 }
