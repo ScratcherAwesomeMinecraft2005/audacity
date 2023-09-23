@@ -21,7 +21,7 @@ class WaveTrack;
 class CutlineHandle final : public UIHandle
 {
    CutlineHandle(const CutlineHandle&) = delete;
-   static HitTestPreview HitPreview(bool cutline, bool unsafe);
+   static HitTestPreview HitPreview(bool unsafe);
 
 public:
    explicit CutlineHandle(const std::shared_ptr<WaveTrack> &pTrack,
@@ -66,8 +66,8 @@ public:
 
 private:
    std::shared_ptr<WaveTrack> mpTrack{};
-   enum Operation { Merge, Expand, Remove };
-   Operation mOperation{ Merge };
+   enum Operation { Expand, Remove };
+   Operation mOperation{ Expand };
    double mStartTime{}, mEndTime{};
    WaveTrackLocations mLocations;
    WaveTrackLocation mLocation{};
