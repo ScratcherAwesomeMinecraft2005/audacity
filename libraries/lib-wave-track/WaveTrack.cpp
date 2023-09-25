@@ -35,11 +35,12 @@ from the project that will own the track.
 #include <wx/debug.h>
 #include <wx/log.h>
 
+#include <algorithm>
 #include <float.h>
 #include <math.h>
-#include <algorithm>
-#include <optional>
 #include <numeric>
+#include <optional>
+#include <type_traits>
 
 #include "float_cast.h"
 
@@ -49,6 +50,7 @@ from the project that will own the track.
 
 #include "Project.h"
 #include "ProjectRate.h"
+#include "SampleBlock.h"
 
 #include "Prefs.h"
 #include "SyncLock.h"
@@ -256,6 +258,18 @@ sampleCount WaveTrack::Interval::TimeToSamples(double time) const
 double WaveTrack::Interval::SamplesToTime(sampleCount s) const
 {
    return mpClip->SamplesToTime(s);
+}
+
+double WaveTrack::Interval::GetTrimLeft() const
+{
+   //TODO wide wave tracks:  assuming that all 'narrow' clips share common trims
+   return mpClip->GetTrimLeft();
+}
+
+double WaveTrack::Interval::GetTrimRight() const
+{
+   //TODO wide wave tracks:  assuming that all 'narrow' clips share common trims
+   return mpClip->GetTrimRight();
 }
 
 bool WaveTrack::Interval::IsPlaceholder() const
@@ -506,6 +520,37 @@ std::shared_ptr<WaveTrack> WaveTrackFactory::Create(sampleFormat format, double 
    return std::make_shared<WaveTrack>(mpFactory, format, rate);
 }
 
+TrackListHolder WaveTrackFactory::Create(size_t nChannels)
+{
+   return Create(nChannels, QualitySettings::SampleFormatChoice(), mRate.GetRate());
+}
+
+TrackListHolder WaveTrackFactory::Create(size_t nChannels, sampleFormat format, double rate)
+{
+   auto channels = std::vector<std::shared_ptr<Track>>{ };
+   std::generate_n(
+      std::back_inserter(channels),
+      nChannels,
+      [&] { return Create(format, rate); }
+   );
+   if(nChannels == 2)
+      return TrackList::Temporary(nullptr, channels[0], channels[1]);
+   return TrackList::Temporary(nullptr, channels);
+}
+
+TrackListHolder WaveTrackFactory::Create(size_t nChannels, const WaveTrack& proto)
+{
+   auto channels = std::vector<std::shared_ptr<Track>>{};
+   std::generate_n(
+      std::back_inserter(channels),
+      nChannels,
+      [&]{ return proto.EmptyCopy(mpFactory, false); }
+   );
+   if(nChannels == 2)
+      return TrackList::Temporary(nullptr, channels[0], channels[1]);
+   return TrackList::Temporary(nullptr, channels);
+}
+
 WaveTrack *WaveTrack::New( AudacityProject &project )
 {
    auto &trackFactory = WaveTrackFactory::Get( project );
@@ -609,11 +654,9 @@ bool WaveTrack::LinkConsistencyFix(bool doFix)
 {
    assert(!doFix || IsLeader());
    auto err = !WritableSampleTrack::LinkConsistencyFix(doFix);
-   auto linkType = GetLinkType();
-   if (static_cast<int>(linkType) == 1 || //Comes from old audacity version
-       linkType == LinkType::Aligned) {
-      auto next = dynamic_cast<WaveTrack*>(
-         *TrackList::Channels(this).first.advance(1));
+   const auto linkType = GetLinkType();
+   if (linkType != LinkType::None) {
+      auto next = *TrackList::Channels(this).first.advance(1);
       if (next == nullptr) {
          //next track is absent or not a wave track, fix and report error
          if (doFix) {
@@ -626,16 +669,16 @@ bool WaveTrack::LinkConsistencyFix(bool doFix)
       }
       else if (doFix) {
          // non-error upgrades happen here
-         auto newLinkType =
-            AreAligned(SortedClipArray(), next->SortedClipArray())
-            ? LinkType::Aligned : LinkType::Group;
-         if (newLinkType != linkType)
-            SetLinkType(newLinkType);
+         if (!AreAligned(SortedClipArray(), next->SortedClipArray()))
+            SetLinkType(LinkType::None);
          else
+         {
+            SetLinkType(LinkType::Aligned);
             // Be sure to lose any right channel group data that might
             // have been made during during deserialization of the channel
             // before joining it
             next->DestroyGroupData();
+         }
       }
    }
    if (doFix) {
@@ -1055,6 +1098,16 @@ TrackListHolder WaveTrack::WideEmptyCopy(
          result->Add(pChannel->EmptyCopy(pFactory, keepLink));
       assert(!keepLink || pNewTrack->IsLeader() == pChannel->IsLeader());
    }
+   return result;
+}
+
+TrackListHolder WaveTrack::MonoToStereo()
+{
+   assert(!GetOwner());
+
+   auto result = Duplicate();
+   result->MakeMultiChannelTrack(**result->begin(), 2);
+
    return result;
 }
 
@@ -2249,11 +2302,35 @@ void WaveTrack::JoinOne(WaveTrack &track, double t0, double t1)
 /*! @excsafety{Partial}
 -- Some prefix (maybe none) of the buffer is appended,
 and no content already flushed to disk is lost. */
-bool WaveChannel::Append(constSamplePtr buffer, sampleFormat format,
-   size_t len, unsigned int stride, sampleFormat effectiveFormat)
+bool WaveChannel::AppendBuffer(constSamplePtr buffer, sampleFormat format,
+   size_t len, unsigned stride, sampleFormat effectiveFormat)
 {
+   return GetTrack().Append(buffer, format, len, stride, effectiveFormat);
+}
+
+/*! @excsafety{Partial}
+-- Some prefix (maybe none) of the buffer is appended,
+and no content already flushed to disk is lost. */
+bool WaveChannel::Append(constSamplePtr buffer, sampleFormat format,
+   size_t len)
+{
+   return GetTrack().Append(buffer, format, len, 1, widestSampleFormat);
+}
+
+/*! @excsafety{Partial}
+-- Some prefix (maybe none) of the buffer is appended,
+and no content already flushed to disk is lost. */
+bool WaveTrack::Append(constSamplePtr buffer, sampleFormat format,
+   size_t len, unsigned int stride, sampleFormat effectiveFormat,
+   size_t iChannel)
+{
+   // TODO wide wave tracks -- there will be only one clip, and its `Append`
+   // (or an overload) must take iChannel
+   auto pTrack = this;
+   if (GetOwner() && iChannel == 1)
+      pTrack = *TrackList::Channels(this).rbegin();
    constSamplePtr buffers[]{ buffer };
-   return GetTrack().RightmostOrNewClip()
+   return pTrack->RightmostOrNewClip()
       ->Append(buffers, format, len, stride, effectiveFormat);
 }
 
@@ -2718,6 +2795,200 @@ bool WaveTrack::Get(size_t iChannel, size_t nBuffers,
    });
 }
 
+namespace {
+void RoundToNearestClipSample(const WaveTrack& track, double& t)
+{
+   const auto clip = track.GetClipAtTime(t);
+   if (!clip)
+      return;
+   t = clip->SamplesToTime(clip->TimeToSamples(t - clip->GetPlayStartTime())) +
+       clip->GetPlayStartTime();
+}
+}
+
+std::pair<size_t, size_t> WaveTrack::GetFloatsCenteredAroundTime(
+   double t, size_t iChannel, float* buffer, size_t numSideSamples,
+   bool mayThrow) const
+{
+   const auto numSamplesReadLeft = GetFloatsFromTime(
+      t, iChannel, buffer, numSideSamples, mayThrow, PlaybackDirection::backward);
+   const auto numSamplesReadRight = GetFloatsFromTime(
+      t, iChannel, buffer + numSideSamples, numSideSamples + 1, mayThrow,
+      PlaybackDirection::forward);
+   return { numSideSamples - numSamplesReadLeft,
+            numSideSamples + numSamplesReadRight };
+}
+
+namespace
+{
+template <typename FloatType>
+using BufferCharType = std::conditional_t<
+   std::is_const_v<std::remove_pointer_t<FloatType>>, constSamplePtr,
+   samplePtr>;
+
+template <typename BufferType> struct SampleAccessArgs
+{
+   const BufferCharType<BufferType> offsetBuffer;
+   const sampleCount start;
+   const size_t len;
+};
+
+template <typename BufferType>
+SampleAccessArgs<BufferType> GetSampleAccessArgs(
+   const WaveClip& clip, double startOrEndTime /*absolute*/, BufferType buffer,
+   size_t totalToRead, size_t alreadyRead, bool forward)
+{
+   assert(totalToRead >= alreadyRead);
+   const auto remainingToRead = totalToRead - alreadyRead;
+   const auto sampsInClip = clip.GetVisibleSampleCount();
+   const auto sampsPerSec = clip.GetRate() / clip.GetStretchRatio();
+   if (forward)
+   {
+      const auto startTime =
+         std::max(startOrEndTime - clip.GetPlayStartTime(), 0.);
+      const sampleCount startSamp { std::round(startTime * sampsPerSec) };
+      if (startSamp >= sampsInClip)
+         return { nullptr, sampleCount { 0u }, 0u };
+      const auto len =
+         limitSampleBufferSize(remainingToRead, sampsInClip - startSamp);
+      return { reinterpret_cast<BufferCharType<BufferType>>(
+                  buffer + alreadyRead),
+               startSamp, len };
+   }
+   else
+   {
+      const auto endTime = std::min(
+         startOrEndTime - clip.GetPlayStartTime(), clip.GetPlayDuration());
+      const sampleCount endSamp { std::round(endTime * sampsPerSec) };
+      const auto startSamp =
+         std::max(endSamp - remainingToRead, sampleCount { 0 });
+      // `len` cannot be greater than `remainingToRead`, itself a `size_t` ->
+      // safe cast.
+      const auto len = (endSamp - startSamp).as_size_t();
+      if (len == 0 || startSamp >= sampsInClip)
+         return { nullptr, sampleCount { 0u }, 0u };
+      const auto bufferEnd = buffer + remainingToRead;
+      return { reinterpret_cast<BufferCharType<BufferType>>(bufferEnd - len),
+               startSamp, len };
+   }
+}
+} // namespace
+
+size_t WaveTrack::GetFloatsFromTime(
+   double t, size_t iChannel, float* buffer, size_t numSamples, bool mayThrow,
+   PlaybackDirection direction) const
+{
+   RoundToNearestClipSample(*this, t);
+   auto clip = GetClipAtTime(t);
+   auto numSamplesRead = 0u;
+   const auto forward = direction == PlaybackDirection::forward;
+   while (clip)
+   {
+      const auto args = GetSampleAccessArgs(
+         *clip, t, buffer, numSamples, numSamplesRead, forward);
+      if (!clip->GetSamples(
+             iChannel, args.offsetBuffer, floatSample, args.start, args.len,
+             mayThrow))
+         return 0u;
+      numSamplesRead += args.len;
+      if (numSamplesRead >= numSamples)
+         break;
+      clip = GetAdjacentClip(*clip, direction);
+   }
+   return numSamplesRead;
+}
+
+bool WaveTrack::GetFloatAtTime(
+   double t, size_t iChannel, float& value, bool mayThrow) const
+{
+   const auto clip = GetClipAtTime(t);
+   if (!clip)
+      return false;
+   clip->GetFloatAtTime(
+      t - clip->GetPlayStartTime(), iChannel, value, mayThrow);
+   return true;
+}
+
+void WaveTrack::SetFloatsCenteredAroundTime(
+   double t, size_t iChannel, const float* buffer, size_t numSideSamples,
+   sampleFormat effectiveFormat)
+{
+   SetFloatsFromTime(
+      t, iChannel, buffer, numSideSamples, effectiveFormat,
+      PlaybackDirection::backward);
+   SetFloatsFromTime(
+      t, iChannel, buffer + numSideSamples, numSideSamples + 1, effectiveFormat,
+      PlaybackDirection::forward);
+}
+
+void WaveTrack::SetFloatsFromTime(
+   double t, size_t iChannel, const float* buffer, size_t numSamples,
+   sampleFormat effectiveFormat, PlaybackDirection direction)
+{
+   RoundToNearestClipSample(*this, t);
+   auto clip = GetClipAtTime(t);
+   auto numSamplesWritten = 0u;
+   const auto forward = direction == PlaybackDirection::forward;
+   while (clip)
+   {
+      const auto args = GetSampleAccessArgs(
+         *clip, t, buffer, numSamples, numSamplesWritten, forward);
+      if (args.len > 0u)
+      {
+         clip->SetSamples(
+            iChannel, args.offsetBuffer, floatSample, args.start, args.len,
+            effectiveFormat);
+         numSamplesWritten += args.len;
+         if (numSamplesWritten >= numSamples)
+            break;
+      }
+      clip = GetAdjacentClip(*clip, direction);
+   }
+}
+
+void WaveTrack::SetFloatAtTime(
+   double t, size_t iChannel, float value, sampleFormat effectiveFormat)
+{
+   SetFloatsCenteredAroundTime(t, iChannel, &value, 0u, effectiveFormat);
+}
+
+void WaveTrack::SetFloatsWithinTimeRange(
+   double t0, double t1, size_t iChannel,
+   const std::function<float(double sampleTime)>& producer,
+   sampleFormat effectiveFormat)
+{
+   assert(t0 <= t1);
+   const auto sortedClips = SortedClipArray();
+   if (sortedClips.empty())
+      return;
+   t0 = std::max(t0, (*sortedClips.begin())->GetPlayStartTime());
+   t1 = std::min(t1, (*sortedClips.rbegin())->GetPlayEndTime());
+   auto clip = GetClipAtTime(t0);
+   while (clip) {
+      const auto clipStartTime = clip->GetPlayStartTime();
+      const auto clipEndTime = clip->GetPlayEndTime();
+      const auto sampsPerSec = clip->GetRate() / clip->GetStretchRatio();
+      const auto roundedT0 =
+         std::round((t0 - clipStartTime) * sampsPerSec) / sampsPerSec +
+         clipStartTime;
+      const auto roundedT1 =
+         std::round((t1 - clipStartTime) * sampsPerSec + 1) / sampsPerSec +
+         clipStartTime;
+      if (clipStartTime > roundedT1)
+         break;
+      const auto tt0 = std::max(clipStartTime, roundedT0);
+      const auto tt1 = std::min(clipEndTime, roundedT1);
+      const size_t numSamples = (tt1 - tt0) * sampsPerSec + .5;
+      std::vector<float> values(numSamples);
+      for (auto i = 0u; i < numSamples; ++i)
+         values[i] = producer(tt0 + clip->SamplesToTime(i));
+      clip->SetFloatsFromTime(
+         tt0 - clipStartTime, iChannel, values.data(), numSamples,
+         effectiveFormat);
+      clip = GetNextClip(*clip, PlaybackDirection::forward);
+   }
+}
+
 bool WaveTrack::GetOne(
    samplePtr buffer, sampleFormat format, sampleCount start, size_t len,
    bool backwards, fillFormat fill, bool mayThrow,
@@ -3108,6 +3379,13 @@ Envelope* WaveTrack::GetEnvelopeAtTime(double time)
       return clip->GetEnvelope();
    else
       return NULL;
+}
+
+void WaveTrack::CreateWideClip(double offset, const wxString& name)
+{
+   assert(IsLeader());
+   for(auto channel : TrackList::Channels(this))
+      channel->CreateClip(offset, name);
 }
 
 WaveClip* WaveTrack::CreateClip(double offset, const wxString& name)
@@ -3726,7 +4004,6 @@ void WaveTrack::AllClipsIterator::push( WaveClipHolders &clips )
    }
 }
 
-#include "SampleBlock.h"
 void VisitBlocks(TrackList &tracks, BlockVisitor visitor,
    SampleBlockIDSet *pIDs)
 {
@@ -3756,8 +4033,6 @@ void InspectBlocks(const TrackList &tracks, BlockInspector inspector,
       const_cast<TrackList &>(tracks), std::move( inspector ), pIDs );
 }
 
-#include "Project.h"
-#include "SampleBlock.h"
 static auto TrackFactoryFactory = []( AudacityProject &project ) {
    return std::make_shared< WaveTrackFactory >(
       ProjectRate::Get( project ),

@@ -130,7 +130,6 @@ class WAVE_TRACK_API WaveChannel
    : public Channel
    // TODO wide wave tracks -- remove "virtual"
    , public virtual WideSampleSequence
-   , public virtual RecordableSequence
 {
 public:
    ~WaveChannel() override;
@@ -182,15 +181,15 @@ public:
       */
    );
 
+   bool AppendBuffer(constSamplePtr buffer, sampleFormat format, size_t len, unsigned stride, sampleFormat effectiveFormat);
+
    /*!
     If there is an existing WaveClip in the WaveTrack that owns the channel,
     then the data are appended to that clip. If there are no WaveClips in the
     track, then a new one is created.
     @return true if at least one complete block was created
     */
-   bool Append(constSamplePtr buffer, sampleFormat format,
-      size_t len, unsigned int stride = 1,
-      sampleFormat effectiveFormat = widestSampleFormat) override;
+   bool Append(constSamplePtr buffer, sampleFormat format, size_t len);
 
    // Get signed min and max sample values
    /*!
@@ -398,6 +397,9 @@ public:
    TrackListHolder WideEmptyCopy(const SampleBlockFactoryPtr &pFactory = {},
       bool keepLink = true) const;
 
+   //! @pre !GetOwner()
+   TrackListHolder MonoToStereo();
+
    // If forClipboard is true,
    // and there is no clip at the end time of the selection, then the result
    // will contain a "placeholder" clip whose only purpose is to make
@@ -495,6 +497,17 @@ public:
     */
    bool IsEmpty(double t0, double t1) const;
 
+   /*!
+    If there is an existing WaveClip in the WaveTrack,
+    then the data are appended to that clip. If there are no WaveClips in the
+    track, then a new one is created.
+    @return true if at least one complete block was created
+    */
+   bool Append(constSamplePtr buffer, sampleFormat format,
+      size_t len, unsigned int stride = 1,
+      sampleFormat effectiveFormat = widestSampleFormat, size_t iChannel = 0)
+   override;
+
    void Flush() override;
 
    bool IsLeader() const override;
@@ -526,6 +539,56 @@ public:
       // filled according to fillFormat; but these were not necessarily one
       // contiguous range.
       sampleCount* pNumWithinClips = nullptr) const override;
+
+   /*!
+    * @brief Gets as many samples as it can, but no more than `2 *
+    * numSideSamples + 1`, centered around `t`. Reads nothing if
+    * `GetClipAtTime(t) == nullptr`. Useful to access samples across clip
+    * boundaries, as it spreads the read to adjacent clips, i.e., not separated
+    * by silence from clip at `t`.
+    *
+    * @return The begin and end indices of the samples in the buffer where
+    * samples could actually be copied.
+    */
+   std::pair<size_t, size_t> GetFloatsCenteredAroundTime(
+      double t, size_t iChannel, float* buffer, size_t numSideSamples,
+      bool mayThrow) const;
+
+   /*!
+    * @return true if `GetClipAtTime(t) != nullptr`, false otherwise.
+    */
+   bool
+   GetFloatAtTime(double t, size_t iChannel, float& value, bool mayThrow) const;
+
+   /*!
+    * @brief Similar to GetFloatsCenteredAroundTime, but for writing. Sets as
+    * many samples as it can according to the same rules as
+    * GetFloatsCenteredAroundTime. Leaves the other samples untouched. @see
+    * GetFloatsCenteredAroundTime
+    */
+   void SetFloatsCenteredAroundTime(
+      double t, size_t iChannel, const float* buffer, size_t numSideSamples,
+      sampleFormat effectiveFormat);
+
+   /*!
+    * @brief Sets sample nearest to `t` to `value`. Silently fails if
+    * `GetClipAtTime(t) == nullptr`.
+    */
+   void SetFloatAtTime(
+      double t, size_t iChannel, float value, sampleFormat effectiveFormat);
+
+   /*!
+    * @brief Provides a means of setting clip values as a function of time.
+    * Included are closest sample to t0 up to closest sample to t1, inclusively.
+    * Given that `t0 <= t1`, always at least one sample is included.
+    * @param producer a function taking sample (absolute, not clip-relative)
+    * time and returning the desired value for the sample at that time.
+    * @pre t0 <= t1
+    */
+   void SetFloatsWithinTimeRange(
+      double t0, double t1, size_t iChannel,
+      const std::function<float(double sampleTime)>& producer,
+      sampleFormat effectiveFormat);
 
    /*!
     * @brief Request samples within [t0, t1), not knowing in advance how
@@ -728,6 +791,9 @@ public:
       return { AllClipsConstIterator{ *this }, AllClipsConstIterator{ } };
    }
 
+   /// @pre IsLeader()
+   void CreateWideClip(double offset = .0, const wxString& name = wxEmptyString);
+
    //! Create new clip and add it to this track.
    /*!
     Returns a pointer to the newly created clip. Optionally initial offset and
@@ -871,6 +937,8 @@ public:
 
       sampleCount TimeToSamples(double time) const;
       double SamplesToTime(sampleCount s) const;
+      double GetTrimLeft() const;
+      double GetTrimRight() const;
 
       auto GetChannel(size_t iChannel) { return
          WideChannelGroupInterval::GetChannel<WaveChannelInterval>(iChannel); }
@@ -981,6 +1049,26 @@ private:
       samplePtr buffer, sampleFormat format, sampleCount start, size_t len,
       bool backwards, fillFormat fill, bool mayThrow,
       sampleCount* pNumWithinClips) const;
+
+   /*!
+    * @brief Helper for GetFloatsCenteredAroundTime. If `direction ==
+    * PlaybackDirection::Backward`, fetches samples to the left of `t`,
+    * excluding `t`, without reversing. @see GetFloatsCenteredAroundTime
+    *
+    * @return The number of samples actually copied.
+    */
+   size_t GetFloatsFromTime(
+      double t, size_t iChannel, float* buffer, size_t numSamples,
+      bool mayThrow, PlaybackDirection direction) const;
+
+   /*!
+    * @brief Similar to GetFloatsFromTime, but for writing. Sets as many samples
+    * as it can according to the same rules as GetFloatsFromTime. Leaves the
+    * other samples untouched. @see GetFloatsFromTime
+    */
+   void SetFloatsFromTime(
+      double t, size_t iChannel, const float* buffer, size_t numSamples,
+      sampleFormat effectiveFormat, PlaybackDirection direction);
 
    void DoSetPan(float value);
    void DoSetGain(float value);
@@ -1104,6 +1192,28 @@ class WAVE_TRACK_API WaveTrackFactory final
     * \return Orphaned WaveTrack
     */
    std::shared_ptr<WaveTrack> Create(sampleFormat format, double rate);
+
+   /**
+    * \brief Creates new \p nChannels tracks with project's default rate and format.
+    * If number of channels is exactly two then a single stereo track is created
+    * instead.
+    */
+   TrackListHolder Create(size_t nChannels);
+
+   /**
+    * \brief Creates new \p nChannels tracks with specified \p format and
+    * \p rate and places them into TrackList.
+    * If number of channels is exactly two then a single stereo track is created
+    * instead.
+    */
+   TrackListHolder Create(size_t nChannels, sampleFormat format, double rate);
+
+   /**
+    * \brief Creates new \p nChannels tracks by creating empty copies of \p proto.
+    * If number of channels is exactly two then a single stereo track is created
+    * instead.
+    */
+   TrackListHolder Create(size_t nChannels, const WaveTrack& proto);
 
  private:
    const ProjectRate &mRate;

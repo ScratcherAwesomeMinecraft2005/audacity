@@ -1168,10 +1168,15 @@ public:
    }
 
    //! If the given track is one of a pair of channels, swap them
-   /*! @return success */
-   static bool SwapChannels(Track &track);
+   //! @return New left track on success
+   static Track* SwapChannels(Track &track);
 
    friend class Track;
+
+   //! @brief Inserts tracks form \p trackList starting from position where
+   //! \p before is located. If \p before is nullptr tracks are appended.
+   //! @pre `before == nullptr || (before->IsLeader() && Find(before) != EndIterator<const Track>())`
+   void Insert(const Track* before, TrackList&& trackList);
 
    /*!
     @pre `tracks` contains pointers only to leader tracks of this, and each of
@@ -1191,16 +1196,14 @@ public:
          { return static_cast< TrackKind* >( DoAdd( t ) ); }
 
    //! Removes linkage if track belongs to a group
-   void UnlinkChannels(Track& track);
+   std::vector<Track*> UnlinkChannels(Track& track);
    /** \brief Converts channels to a multichannel track.
    * @param first and the following must be in this list. Tracks should
    * not be a part of another group (not linked)
    * @param nChannels number of channels, for now only 2 channels supported
-   * @param aligned if true, the link type will be set to Track::LinkType::Aligned,
-   * or Track::LinkType::Group otherwise
    * @returns true on success, false if some prerequisites do not met
    */
-   bool MakeMultiChannelTrack(Track& first, int nChannels, bool aligned);
+   bool MakeMultiChannelTrack(Track& first, int nChannels);
 
    /*!
     Replace channel group `t` with the first group in the given list, return a
@@ -1289,6 +1292,15 @@ public:
 
    //! Remove all tracks from `list` and put them at the end of `this`
    void Append(TrackList &&list);
+
+   // Like RegisterPendingChangedTrack, but for a list of new tracks,
+   // not a replacement track.  Caller
+   // supplies the list, and there are no updates.
+   // Pending tracks will have an unassigned TrackId.
+   // Pending new tracks WILL occur in iterations, always after actual
+   // tracks, and in the sequence that they were added.  They can be
+   // distinguished from actual tracks by TrackId.
+   void RegisterPendingNewTracks(TrackList &&list);
 
    //! Remove first channel group (if any) from `list` and put it at the end of
    //! `this`
@@ -1423,18 +1435,10 @@ public:
     @pre `src->IsLeader()`
     @post result: `src->NChannels() == result.size()`
     */
-   std::vector<Track*> RegisterPendingChangedTrack(
+   Track* RegisterPendingChangedTrack(
       Updater updater,
       Track *src
    );
-
-   // Like the previous, but for a NEW track, not a replacement track.  Caller
-   // supplies the track, and there are no updates.
-   // Pending track will have an unassigned TrackId.
-   // Pending changed tracks WILL occur in iterations, always after actual
-   // tracks, and in the sequence that they were added.  They can be
-   // distinguished from actual tracks by TrackId.
-   void RegisterPendingNewTrack( const std::shared_ptr<Track> &pTrack );
 
    // Invoke the updaters of pending tracks.  Pass any exceptions from the
    // updater functions.
