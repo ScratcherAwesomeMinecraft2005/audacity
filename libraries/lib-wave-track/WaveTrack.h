@@ -531,7 +531,7 @@ public:
    ///
 
    //! This fails if any clip overlapping the range has non-unit stretch ratio!
-   bool Get(
+   bool DoGet(
       size_t iChannel, size_t nBuffers, const samplePtr buffers[],
       sampleFormat format, sampleCount start, size_t len, bool backwards,
       fillFormat fill = FillFormat::fillZero, bool mayThrow = true,
@@ -932,6 +932,7 @@ public:
 
       void SetPlayStartTime(double time);
       double GetPlayStartTime() const;
+      double GetPlayEndTime() const;
 
       double GetStretchRatio() const;
 
@@ -957,6 +958,9 @@ public:
       void TrimRightTo(double t);
       void StretchLeftTo(double t);
       void StretchRightTo(double t);
+
+      void ApplyStretchRatio(const std::function<void(double)>& reportProgress);
+      bool StretchRatioEquals(double value) const;
 
       std::shared_ptr<const WaveClip> GetClip(size_t iChannel) const
       { return iChannel == 0 ? mpClip : mpClip1; }

@@ -211,6 +211,32 @@ void WaveTrack::Interval::StretchRightTo(double t)
       GetClip(channel)->StretchRightTo(t);
 }
 
+void WaveTrack::Interval::ApplyStretchRatio(
+   const std::function<void(double)>& reportProgress)
+{
+   const auto channelsCount = NChannels();
+
+   // It is safe to assume that the track has at least one channel
+   assert(channelsCount > 0);
+
+   for (unsigned channel = 0; channel < channelsCount; ++channel)
+   {
+      GetClip(channel)->ApplyStretchRatio(
+         [&reportProgress, channel, channelsCount](double progress)
+         { reportProgress((channel + progress) / channelsCount); });
+   }
+}
+
+bool WaveTrack::Interval::StretchRatioEquals(double value) const
+{
+   for (unsigned channel = 0; channel < NChannels(); ++channel)
+   {
+      if (!GetClip(channel)->StretchRatioEquals(value))
+         return false;
+   }
+   return true;
+}
+
 void WaveTrack::Interval::SetName(const wxString& name)
 {
    ForEachClip([&](auto& clip) { clip.SetName(name); });
@@ -242,6 +268,13 @@ double WaveTrack::Interval::GetPlayStartTime() const
 {
    //TODO wide wave tracks:  assuming that all 'narrow' clips share common beginning
    return mpClip->GetPlayStartTime();
+}
+
+double WaveTrack::Interval::GetPlayEndTime() const
+{
+   // TODO wide wave tracks:  assuming that all 'narrow' clips share common
+   // beginning
+   return mpClip->GetPlayEndTime();
 }
 
 double WaveTrack::Interval::GetStretchRatio() const
@@ -2765,7 +2798,7 @@ float WaveChannel::GetRMS(double t0, double t1, bool mayThrow) const
    return duration > 0 ? sqrt(sumsq / duration) : 0.0;
 }
 
-bool WaveTrack::Get(size_t iChannel, size_t nBuffers,
+bool WaveTrack::DoGet(size_t iChannel, size_t nBuffers,
    const samplePtr buffers[], sampleFormat format,
    sampleCount start, size_t len, bool backwards, fillFormat fill,
    bool mayThrow, sampleCount* pNumWithinClips) const

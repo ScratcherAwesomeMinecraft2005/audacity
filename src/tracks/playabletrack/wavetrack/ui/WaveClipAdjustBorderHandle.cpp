@@ -26,6 +26,7 @@
 #include "ViewInfo.h"
 #include "ProjectHistory.h"
 #include "UndoManager.h"
+#include "WaveClipUtilities.h"
 
 namespace {
 
@@ -125,6 +126,7 @@ private:
    std::shared_ptr<WaveTrack::Interval> mInterval;
    int mDragStartX{ };
    const bool mAdjustingLeftBorder;
+   const bool mIsStretchMode;
    const double mInitialBorderPosition;
    double mBorderPosition;
    const std::pair<double, double> mRange;
@@ -139,12 +141,10 @@ private:
       mAdjustHandler(*mInterval, mBorderPosition);
    }
 
-   //Search for a good snap points among all tracks, including
-   //the one to which the adjusted clip belongs, but not counting
-   //the borders of adjusted clip
+   //Search for a good snap points among all tracks except
+   //one to which moving interval belongs to
    static SnapPointArray FindSnapPoints(
       const WaveTrack* currentTrack,
-      WaveTrack::Interval& adjustedInterval,
       const std::pair<double, double> range)
    {
       SnapPointArray result;
@@ -191,6 +191,7 @@ public:
       : mTrack { std::move(track) }
       , mInterval { std::move(interval) }
       , mAdjustingLeftBorder { adjustLeftBorder }
+      , mIsStretchMode { isStretchMode }
       , mInitialBorderPosition { adjustLeftBorder ? mInterval->Start() :
                                              mInterval->End() }
       , mBorderPosition { mInitialBorderPosition } 
@@ -202,7 +203,7 @@ public:
       {
          mSnapManager = std::make_unique<SnapManager>(
             *trackList->GetOwner(),
-            FindSnapPoints(mTrack.get(), *mInterval, mRange),
+            FindSnapPoints(mTrack.get(), mRange),
             zoomInfo);
       }
    }
@@ -256,7 +257,12 @@ public:
       const auto dt = std::abs(mInitialBorderPosition - mBorderPosition);
       if (dt != 0)
       {
-         if (mAdjustingLeftBorder)
+         if (mIsStretchMode)
+         {
+            PushClipSpeedChangedUndoState(
+               project, 100.0 / mInterval->GetStretchRatio());
+         }
+         else if (mAdjustingLeftBorder)
          {
             /*i18n-hint: This is about trimming a clip, a length in seconds like "2.4 seconds" is shown*/
             ProjectHistory::Get(project).PushState(XO("Adjust left trim by %.02f seconds").Format(dt),
