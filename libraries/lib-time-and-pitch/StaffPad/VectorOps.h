@@ -14,6 +14,15 @@
 #include <cstdint>
 #include <cstring>
 
+#if defined(_MSC_VER) && (defined(_M_AMD64) || defined(_M_X64) || \
+                          (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
+#define USE_SSE2_COMPLEX 1
+#endif
+
+#if USE_SSE2_COMPLEX
+#   include "SimdComplexConversions_sse2.h"
+#endif
+
 namespace staffpad {
 namespace vo {
 
@@ -90,23 +99,52 @@ inline void findMaxElement(const T* src, int32_t n, int32_t& maxIndex, T& maxVal
   }
 }
 
+#if USE_SSE2_COMPLEX
+
+inline void calcPhases(const std::complex<float>* src, float* dst, int32_t n)
+{
+  simd_complex_conversions::perform_parallel_simd_aligned(
+     src, dst, n,
+     [](const __m128 rp, const __m128 ip, __m128& out)
+     { out = simd_complex_conversions::atan2_ps(ip, rp); });
+}
+
+inline void calcNorms(const std::complex<float>* src, float* dst, int32_t n)
+{
+  simd_complex_conversions::perform_parallel_simd_aligned(
+     src, dst, n,
+     [](const __m128 rp, const __m128 ip, __m128& out)
+     { out = simd_complex_conversions::norm(rp, ip); });
+}
+
+inline void rotate(
+   const float* oldPhase, const float* newPhase, std::complex<float>* dst,
+   int32_t n)
+{
+  simd_complex_conversions::rotate_parallel_simd_aligned(
+     oldPhase, newPhase, dst, n);
+}
+#else
 inline void calcPhases(const std::complex<float>* src, float* dst, int32_t n)
 {
   for (int32_t i = 0; i < n; i++)
     dst[i] = std::arg(src[i]);
 }
 
-inline void calcMagnitudes(const std::complex<float>* src, float* dst, int32_t n)
+inline void calcNorms(const std::complex<float>* src, float* dst, int32_t n)
 {
   for (int32_t i = 0; i < n; i++)
-    dst[i] = std::abs(src[i]);
+    dst[i] = std::norm(src[i]);
 }
 
-inline void convertPolarToCartesian(const float* srcMag, const float* srcPh, std::complex<float>* dst, int32_t n)
+inline void rotate(const float* oldPhase, const float* newPhase, std::complex<float>* dst, int32_t n)
 {
-  for (int32_t i = 0; i < n; i++)
-    dst[i] = std::polar<float>(srcMag[i], srcPh[i]);
+  for (int32_t i = 0; i < n; i++) {
+    auto theta = newPhase[i] - oldPhase[i];
+    dst[i] *= std::complex<float>(cosf(theta), sinf(theta));
+  }
 }
+#endif
 
 } // namespace vo
 } // namespace staffpad
