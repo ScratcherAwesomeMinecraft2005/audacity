@@ -2563,6 +2563,27 @@ void WaveTrack::SetLegacyFormat(sampleFormat format)
    mLegacyFormat = format;
 }
 
+void WaveTrack::CopyClipEnvelopes()
+{
+   const auto channels = TrackList::Channels(this);
+   if (channels.size() != 2)
+      return;
+   // Assume correspondence of clips
+   const auto left = *channels.begin();
+   auto it = begin(left->mClips),
+      last = end(left->mClips);
+   const auto right = *channels.rbegin();
+   auto it2 = begin(right->mClips),
+      last2 = end(right->mClips);
+   for (; it != last; ++it, ++it2) {
+      if (it2 == last2) {
+         assert(false);
+         break;
+      }
+      (*it2)->SetEnvelope(std::make_unique<Envelope>(*(*it)->GetEnvelope()));
+   }
+}
+
 /*! @excsafety{Mixed} */
 /*! @excsafety{No-fail} -- The rightmost clip will be in a flushed state. */
 /*! @excsafety{Partial}
@@ -3285,10 +3306,13 @@ WaveChannel::GetSampleView(double t0, double t1, bool mayThrow) const
       }
       const auto intervalT0 = t0 - intervalStartTime;
       const auto intervalT1 = std::min(t1, interval->End()) - intervalStartTime;
-      auto newSegment =
-         interval->GetSampleView(intervalT0, intervalT1, mayThrow);
-      t0 += intervalT1 - intervalT0;
-      segments.push_back(std::move(newSegment));
+      if(intervalT1 > intervalT0)
+      {
+         auto newSegment =
+            interval->GetSampleView(intervalT0, intervalT1, mayThrow);
+         t0 += intervalT1 - intervalT0;
+         segments.push_back(std::move(newSegment));
+      }
       if (t0 == t1)
          break;
    }

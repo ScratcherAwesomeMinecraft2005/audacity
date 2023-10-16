@@ -760,26 +760,26 @@ void WaveTrackMenuTable::OnMergeStereo(wxCommandEvent &)
 
    const auto checkAligned = [](const WaveTrack& left, const WaveTrack& right)
    {
-      const auto isPlainInterval = [](const WaveTrack::Interval& interval)
+      auto eqTrims = [](double a, double b)
       {
-         return interval.GetTrimLeft() == .0 &&
-            interval.GetTrimRight() == .0 &&
-            interval.GetStretchRatio() == 1.0;
+         return std::abs(a - b) <=
+            std::numeric_limits<double>::epsilon() * std::max(a, b);
       };
+      const auto eps = 0.5 / left.GetRate();
       const auto rightIntervals = right.Intervals();
       for(const auto& a : left.Intervals())
       {
-         if(!isPlainInterval(*a))
-            return false;
-
          auto it = std::find_if(
             rightIntervals.begin(),
             rightIntervals.end(),
             [&](const auto& b)
             {
-               return a->Start() == b->Start() &&
-                  a->End() == b->End() &&
-                  isPlainInterval(*b);
+               //Start() and End() are always snapped to a sample grid
+               return std::abs(a->Start() - b->Start()) < eps &&
+                  std::abs(a->End() - b->End()) < eps &&
+                  eqTrims(a->GetTrimLeft(), b->GetTrimLeft()) &&
+                  eqTrims(a->GetTrimRight(), b->GetTrimRight()) &&
+                  a->StretchRatioEquals(b->GetStretchRatio());
             });
          if(it == rightIntervals.end())
             return false;
@@ -861,7 +861,9 @@ void WaveTrackMenuTable::SplitStereo(bool stereo)
    int totalHeight = 0;
    int nChannels = 0;
 
-   auto unlinkedTracks = TrackList::Get(*project).UnlinkChannels(*mpData->pTrack);
+   const auto pTrack = mpData->pTrack;
+   static_cast<WaveTrack*>(pTrack)->CopyClipEnvelopes();
+   auto unlinkedTracks = TrackList::Get(*project).UnlinkChannels(*pTrack);
    assert(unlinkedTracks.size() == 2);
    if(stereo)
    {
@@ -898,9 +900,10 @@ void WaveTrackMenuTable::OnSwapChannels(wxCommandEvent &)
    AudacityProject *const project = &mpData->project;
 
    auto &trackFocus = TrackFocus::Get( *project );
-   const bool hasFocus = trackFocus.Get() == mpData->pTrack;
-
-   if (auto track = TrackList::SwapChannels(*mpData->pTrack))
+   const auto pTrack = mpData->pTrack;
+   const bool hasFocus = trackFocus.Get() == pTrack;
+   static_cast<WaveTrack*>(pTrack)->CopyClipEnvelopes();
+   if (auto track = TrackList::SwapChannels(*pTrack))
    {
       if (hasFocus)
          trackFocus.Set(track);

@@ -511,11 +511,6 @@ void AboutDialog::PopulateInformationPage( ShuttleGui & S )
 
    /* this builds up the list of information to go in the window in the string
     * informationStr */
-   informationStr
-      << wxT("<h2><center>")
-      << XO("Build Information")
-      << wxT("</center></h2>\n")
-      << VerCheckHtml();
  
    informationStr
       << wxT("<h3>")
@@ -611,10 +606,24 @@ void AboutDialog::PopulateInformationPage( ShuttleGui & S )
    informationStr
       << wxT("<table>");   // start table of file formats supported
 
-   #if defined(USE_LIBID3TAG)
-   AddBuildinfoRow(&informationStr, wxT("libmpg123"), XO("MP3 Importing"), enabled);
+   #if defined(USE_LIBMPG123)
+   AddBuildinfoRow(&informationStr, wxT("libmpg123"), XO("MP3 Import"), enabled);
    #else
-   AddBuildinfoRow(&informationStr, wxT("libmad"), XO("MP3 Importing"), disabled);
+   AddBuildinfoRow(&informationStr, wxT("libmpg123"), XO("MP3 Import"), disabled);
+   #endif
+
+   #if USE_LIBMP3LAME
+   AddBuildinfoRow(
+      &informationStr, wxT("libmp3lame"),
+      /* i18n-hint: LAME is the codec name. This name should not be translated
+       */
+      XO("MP3 Export"), enabled);
+   #else
+   AddBuildinfoRow(
+      &informationStr, wxT("libopus"),
+      /* i18n-hint: Opus is the codec name. This name should not be translated
+       */
+      XO("Opus Import and Export"), disabled);
    #endif
 
    #ifdef USE_LIBVORBIS
@@ -625,6 +634,19 @@ void AboutDialog::PopulateInformationPage( ShuttleGui & S )
    #else
    AddBuildinfoRow(&informationStr, wxT("libvorbis"),
          XO("Ogg Vorbis Import and Export"), disabled);
+   #endif
+
+   #if USE_LIBVORBIS && USE_LIBOPUS && USE_OPUSFILE
+   AddBuildinfoRow(
+      &informationStr, wxT("libopus"),
+      /* i18n-hint: Opus is the codec name. This name should not be translated */
+      XO("Opus Import and Export"), enabled);
+   #else
+   AddBuildinfoRow(
+      &informationStr, wxT("libopus"),
+      /* i18n-hint: Opus is the codec name. This name should not be translated
+       */
+      XO("Opus Import and Export"), disabled);
    #endif
 
    #ifdef USE_LIBID3TAG
@@ -650,14 +672,6 @@ void AboutDialog::PopulateInformationPage( ShuttleGui & S )
          enabled);
    # else
    AddBuildinfoRow(&informationStr, wxT("libtwolame"), XO("MP2 export"),
-         disabled);
-   # endif
-
-   # if USE_QUICKTIME
-   AddBuildinfoRow(&informationStr, wxT("QuickTime"), XO("Import via QuickTime"),
-         enabled);
-   # else
-   AddBuildinfoRow(&informationStr, wxT("QuickTime"), XO("Import via QuickTime"),
          disabled);
    # endif
 
