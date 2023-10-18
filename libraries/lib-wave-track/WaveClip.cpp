@@ -644,6 +644,11 @@ XMLTagHandler *WaveClip::HandleXMLChild(const std::string_view& tag)
 void WaveClip::WriteXML(XMLWriter &xmlFile) const
 // may throw
 {
+   if (GetSequenceSamplesCount() <= 0)
+      // Oops, I'm empty? How did that happen? Anyway, I do nothing but causing
+      // problems, don't save me.
+      return;
+
    xmlFile.StartTag(wxT("waveclip"));
    xmlFile.WriteAttr(wxT("offset"), mSequenceOffset, 8);
    xmlFile.WriteAttr(wxT("trimLeft"), mTrimLeft, 8);
@@ -1371,6 +1376,11 @@ double WaveClip::GetPlayEndTime() const
 double WaveClip::GetPlayDuration() const
 {
    return GetPlayEndTime() - GetPlayStartTime();
+}
+
+bool WaveClip::IsEmpty() const
+{
+   return std::floor(GetPlayDuration() * mRate + 0.5) < 2.0;
 }
 
 sampleCount WaveClip::GetPlayStartSample() const
