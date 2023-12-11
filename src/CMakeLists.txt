@@ -128,6 +128,10 @@ list( APPEND SOURCES
       ListNavigationEnabled.h
       ListNavigationPanel.cpp
       ListNavigationPanel.h
+      Lyrics.cpp
+      Lyrics.h
+      LyricsWindow.cpp
+      LyricsWindow.h
       MenuCreator.cpp
       MenuCreator.h
       MixerBoard.cpp
@@ -163,6 +167,8 @@ list( APPEND SOURCES
       ProjectWindows.h
       RealtimeEffectPanel.cpp
       RealtimeEffectPanel.h
+      Screenshot.cpp
+      Screenshot.h
       ScrubState.cpp
       ScrubState.h
       SelectUtilities.cpp
@@ -274,6 +280,8 @@ list( APPEND SOURCES
       commands/PreferenceCommands.h
       commands/ResponseQueue.cpp
       commands/ResponseQueue.h
+      commands/ScreenshotCommand.cpp
+      commands/ScreenshotCommand.h
       commands/ScriptCommandRelay.cpp
       commands/ScriptCommandRelay.h
       commands/SelectCommand.cpp
@@ -603,6 +611,8 @@ list( APPEND SOURCES
       prefs/MidiIOPrefs.h
       prefs/ModulePrefs.cpp
       prefs/ModulePrefs.h
+      prefs/MousePrefs.cpp
+      prefs/MousePrefs.h
       prefs/PlaybackPrefs.cpp
       prefs/PlaybackPrefs.h
       prefs/PrefsDialog.cpp
@@ -885,6 +895,7 @@ list( APPEND SOURCES
       widgets/TimeFormat.h
       widgets/UnwritableLocationErrorDialog.cpp
       widgets/UnwritableLocationErrorDialog.h
+      widgets/VetoDialogHook.h
       widgets/Warning.cpp
       widgets/Warning.h
       widgets/auStaticText.cpp
@@ -1316,7 +1327,6 @@ set( AUDACITY_LIBRARIES
    lib-menus-interface
    lib-note-track-interface
    lib-viewport-interface
-   lib-music-information-retrieval-interface
 )
 
 if (USE_VST)

@@ -45,8 +45,6 @@ class AUDACITY_DLL_API ImportExportPrefs final : public PrefsPanel
       struct AUDACITY_DLL_API Init{ Init(); };
    };
 
-   static EnumSetting<bool> MusicFileImportSetting;
-
    ImportExportPrefs(wxWindow * parent, wxWindowID winid);
    ~ImportExportPrefs();
    ComponentInterfaceSymbol GetSymbol() const override;
@@ -62,7 +60,7 @@ class AUDACITY_DLL_API ImportExportPrefs final : public PrefsPanel
    };
    struct AUDACITY_DLL_API PopulatorItem final : Registry::SingleItem {
       static Registry::GroupItem<Traits> &Registry();
-
+   
       PopulatorItem(const Identifier &id, Populator populator);
 
       Populator mPopulator;

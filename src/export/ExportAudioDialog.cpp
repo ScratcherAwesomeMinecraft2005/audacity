@@ -53,7 +53,7 @@ ChoiceSetting ExportAudioExportRange { L"/ExportAudioDialog/ExportRange",
    {
       { "project", XO("Entire &Project") },
       { "split", XO("M&ultiple Files") },
-      { "selection", XO("Curren&t Selection") }
+      { "selection", XO("Curren&t selection") }
       
    },
    0, //project

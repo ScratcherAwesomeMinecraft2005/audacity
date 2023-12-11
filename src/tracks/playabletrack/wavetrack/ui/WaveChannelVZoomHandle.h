@@ -24,10 +24,10 @@ namespace WaveChannelVZoomHandle
    using Result = unsigned;
 
    AUDACITY_DLL_API
-   HitTestPreview HitPreview(const bool bVZoom);
+   HitTestPreview HitPreview(const wxMouseState &state);
 
    AUDACITY_DLL_API
-   bool IsDragZooming(int zoomStart, int zoomEnd, bool hasDragZoom);
+   bool IsDragZooming(int zoomStart, int zoomEnd);
 
    using DoZoomFunction = void (*)(AudacityProject *pProject,
        WaveTrack *pTrack,
@@ -38,7 +38,7 @@ namespace WaveChannelVZoomHandle
    AUDACITY_DLL_API
    Result DoDrag(
       const TrackPanelMouseEvent &event, AudacityProject *pProject,
-      int zoomStart, int &zoomEnd, bool hasDragZoom );
+      int zoomStart, int &zoomEnd );
 
    AUDACITY_DLL_API
    Result DoRelease(
@@ -50,7 +50,7 @@ namespace WaveChannelVZoomHandle
    AUDACITY_DLL_API
    void DoDraw(
       TrackPanelDrawingContext &context,
-      const wxRect &rect, unsigned iPass, int zoomStart, int zoomEnd, bool hasDragZoom );
+      const wxRect &rect, unsigned iPass, int zoomStart, int zoomEnd );
 
    AUDACITY_DLL_API
    wxRect DoDrawingArea(
@@ -90,6 +90,10 @@ protected:
       { OnZoom(WaveChannelViewConstants::kZoom1to1); }
    void OnZoomReset(wxCommandEvent&)
       { OnZoom(WaveChannelViewConstants::kZoomReset); }
+   void OnZoomDiv2Vertical(wxCommandEvent&)
+      { OnZoom(WaveChannelViewConstants::kZoomDiv2); }
+   void OnZoomTimes2Vertical(wxCommandEvent&)
+      { OnZoom(WaveChannelViewConstants::kZoomTimes2); }
    void OnZoomHalfWave(wxCommandEvent&)
       { OnZoom(WaveChannelViewConstants::kZoomHalfWave); }
    void OnZoomInVertical(wxCommandEvent&)
@@ -103,6 +107,8 @@ protected:
 enum {
    OnZoomFitVerticalID = 20000,
    OnZoomResetID,
+   OnZoomDiv2ID,
+   OnZoomTimes2ID,
    OnZoomHalfWaveID,
    OnZoomInVerticalID,
    OnZoomOutVerticalID,
