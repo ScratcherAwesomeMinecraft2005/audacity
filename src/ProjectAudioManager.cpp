@@ -40,7 +40,6 @@ Paul Licameli split from ProjectManager.cpp
 #include "Viewport.h"
 #include "WaveClip.h"
 #include "WaveTrack.h"
-#include "toolbars/ToolManager.h"
 #include "tracks/ui/Scrubbing.h"
 #include "tracks/ui/ChannelView.h"
 #include "widgets/MeterPanelBase.h"
@@ -555,11 +554,6 @@ void ProjectAudioManager::Stop(bool stopStream /* = true*/)
          meter->Clear();
       }
    }
-
-   // To do: eliminate this, use an event instead
-   const auto toolbar = ToolManager::Get( *project ).GetToolBar(wxT("Scrub"));
-   if (toolbar)
-      toolbar->EnableDisableButtons();
 }
 
 
@@ -756,13 +750,7 @@ void ProjectAudioManager::OnRecord(bool altAppearance)
 bool ProjectAudioManager::UseDuplex()
 {
    bool duplex;
-   gPrefs->Read(wxT("/AudioIO/Duplex"), &duplex,
-#ifdef EXPERIMENTAL_DA
-      false
-#else
-      true
-#endif
-      );
+   gPrefs->Read(wxT("/AudioIO/Duplex"), &duplex, true);
    return duplex;
 }
 
@@ -878,7 +866,7 @@ bool ProjectAudioManager::DoRecord(AudacityProject &project,
                !recordingStartsBeforeTrackEnd ||
                lastClip->WithinPlayRegion(recordingStart));
             if (!recordingStartsBeforeTrackEnd ||
-               !lastClip->StretchRatioEquals(1))
+               lastClip->HasPitchOrSpeed())
                pending->CreateWideClip(t0, makeNewClipName(pending));
             transportSequences.captureSequences
                .push_back(pending->SharedPointer<WaveTrack>());
@@ -956,7 +944,7 @@ bool ProjectAudioManager::DoRecord(AudacityProject &project,
             transportSequences.captureSequences.push_back(
                std::static_pointer_cast<WaveTrack>(newTrack->shared_from_this())
             );
-               
+
             for(auto channel : newTrack->Channels())
             {
                ChannelView::Get(*channel).SetMinimized(minimizeChannelView);
@@ -1213,7 +1201,7 @@ static ProjectAudioIO::DefaultOptions::Scope sScope {
             -> std::unique_ptr<PlaybackPolicy>
       {
          return std::make_unique<DefaultPlaybackPolicy>( project,
-            trackEndTime, loopEndTime,
+            trackEndTime, loopEndTime, options.pStartTime,
             options.loopEnabled, options.variableSpeed);
       };
 

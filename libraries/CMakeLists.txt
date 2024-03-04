@@ -61,6 +61,8 @@ set( LIBRARIES
    lib-note-track
    lib-viewport
    lib-music-information-retrieval
+   lib-crypto
+   lib-fft
 )
 
 if ( ${_OPT}use_lv2 )

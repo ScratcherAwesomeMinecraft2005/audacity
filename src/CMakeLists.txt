@@ -64,6 +64,8 @@ list( APPEND SOURCES
       $<$<BOOL:${${_OPT}bundle_gplv3}>:AboutDialogGPLv3Text.cpp>
       AdornedRulerPanel.cpp
       AdornedRulerPanel.h
+      AnalyzedWaveClip.cpp
+      AnalyzedWaveClip.h
       AudacityApp.cpp
       AudacityApp.h
       $<$<BOOL:${wxIS_MAC}>:AudacityApp.mm>
@@ -71,6 +73,8 @@ list( APPEND SOURCES
       AudacityFileConfig.h
       AudacityHeaders.cpp
       AudacityHeaders.h
+      AudacityMirProject.cpp
+      AudacityMirProject.h
       AudioPasteDialog.cpp
       AudioPasteDialog.h
       AutoRecoveryDialog.cpp
@@ -87,6 +91,8 @@ list( APPEND SOURCES
       CellularPanel.h
       Clipboard.cpp
       Clipboard.h
+      ClipMirAudioReader.cpp
+      ClipMirAudioReader.h
       CommonCommandFlags.cpp
       CommonCommandFlags.h
       CrashReport.cpp
@@ -644,8 +650,6 @@ list( APPEND SOURCES
       toolbars/EditToolBar.h
       toolbars/MeterToolBar.cpp
       toolbars/MeterToolBar.h
-      toolbars/ScrubbingToolBar.cpp
-      toolbars/ScrubbingToolBar.h
       toolbars/SelectionBar.cpp
       toolbars/SelectionBar.h
       toolbars/SnappingToolBar.cpp
@@ -708,12 +712,23 @@ list( APPEND SOURCES
       tracks/playabletrack/ui/PlayableTrackButtonHandles.h
       tracks/playabletrack/ui/PlayableTrackControls.cpp
       tracks/playabletrack/ui/PlayableTrackControls.h
-      tracks/playabletrack/wavetrack/ui/ChangeClipSpeedDialog.cpp
-      tracks/playabletrack/wavetrack/ui/ChangeClipSpeedDialog.h
+      tracks/playabletrack/wavetrack/ui/ClipOverflowButtonHandle.cpp
+      tracks/playabletrack/wavetrack/ui/ClipOverflowButtonHandle.h
+      tracks/playabletrack/wavetrack/ui/ClipButtonId.h
+      tracks/playabletrack/wavetrack/ui/ClipParameters.cpp
+      tracks/playabletrack/wavetrack/ui/ClipParameters.h
+      tracks/playabletrack/wavetrack/ui/ClipPitchAndSpeedButtonHandle.cpp
+      tracks/playabletrack/wavetrack/ui/ClipPitchAndSpeedButtonHandle.h
       tracks/playabletrack/wavetrack/ui/CutlineHandle.cpp
       tracks/playabletrack/wavetrack/ui/CutlineHandle.h
       tracks/playabletrack/wavetrack/ui/GetWaveDisplay.cpp
       tracks/playabletrack/wavetrack/ui/GetWaveDisplay.h
+      tracks/playabletrack/wavetrack/ui/HighlitClipButtonHandle.cpp
+      tracks/playabletrack/wavetrack/ui/HighlitClipButtonHandle.h
+      tracks/playabletrack/wavetrack/ui/LowlitClipButton.cpp
+      tracks/playabletrack/wavetrack/ui/LowlitClipButton.h
+      tracks/playabletrack/wavetrack/ui/PitchAndSpeedDialog.cpp
+      tracks/playabletrack/wavetrack/ui/PitchAndSpeedDialog.h
       tracks/playabletrack/wavetrack/ui/SampleHandle.cpp
       tracks/playabletrack/wavetrack/ui/SampleHandle.h
       tracks/playabletrack/wavetrack/ui/SpectrumCache.cpp
@@ -1312,7 +1327,6 @@ set( AUDACITY_LIBRARIES
    lib-stretching-sequence-interface
    lib-import-export-interface
    lib-export-ui-interface
-   lib-file-formats-interface
    lib-menus-interface
    lib-note-track-interface
    lib-viewport-interface

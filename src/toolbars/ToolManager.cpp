@@ -541,8 +541,7 @@ static struct DefaultConfigEntry {
    { wxT("PlayMeter"),         wxT("RecordMeter"),     {}                },
 
    // start another top dock row
-   { wxT("Scrub"),             {},                     wxT("Control")         },
-   { wxT("Device"),            wxT("Scrub"),           wxT("Control")         },
+   { wxT("Device"),             {},                     wxT("Control")         },
 
    // Hidden by default in top dock
    { wxT("CombinedMeter"),     {},                     {}                },
@@ -553,12 +552,8 @@ static struct DefaultConfigEntry {
    { wxT("Time"),              wxT("Snapping"),        {}                },
    { wxT("Selection"),         wxT("Time"),            {}                },
 
-// DA: Transcription Toolbar not docked, by default.
-#ifdef EXPERIMENTAL_DA
-   { wxT("Transcription"),     {},                     {}                },
-#else
    { wxT("Transcription"),     wxT("Selection"),       {}                },
-#endif
+
 
    // Hidden by default in bottom dock
    { wxT("SpectralSelection"), {},                     {}                },

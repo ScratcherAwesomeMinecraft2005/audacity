@@ -1,22 +1,22 @@
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) 2023 Audacity Team
+# Copyright (C) 2024 Audacity Team
 # This file is distributed under the same license as the audacity package.
 #
 # Translators:
 # Ettore Atalan <atalanttore@googlemail.com>, 2023
-# Grzegorz Pruchniakowski <gootector@o2.pl>, 2023
+# Grzegorz Pruchniakowski <gootector@o2.pl>, 2024
 # Joachim Huffer <joachim.huffer@gmail.com>, 2023
-# Link Winterberg, 2023
+# Link Winterberg, 2024
 # Michał Trzebiatowski <michtrz@gmail.com>, 2023
 # Paval Shalamitski <yehekim@gmail.com>, 2023
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: audacity 3.4.0\n"
+"Project-Id-Version: audacity 3.5.0\n"
 "Report-Msgid-Bugs-To: audacity-translation@lists.sourceforge.net\n"
 "POT-Creation-Date: 2023-10-17 15:22+0300\n"
-"PO-Revision-Date: 2023-10-20 02:00+0000\n"
-"Last-Translator: Grzegorz Pruchniakowski <gootector@o2.pl>, 2023\n"
+"PO-Revision-Date: 2024-02-28 20:00+0000\n"
+"Last-Translator: Grzegorz Pruchniakowski <gootector@o2.pl>, 2024\n"
 "Language-Team: German (https://app.transifex.com/klyok/teams/690/de/)\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
@@ -12927,7 +12927,7 @@ msgstr "(%) [-50 bis 100]:"
 
 #: src/effects/TimeScale.cpp
 msgid "Final Pitch Shift"
-msgstr "Letzte Tonhöhenänderung"
+msgstr "Letzte Tonhöhenverschiebung"
 
 #: src/effects/TimeScale.cpp
 msgid "(s&emitones) [-12 to 12]:"
@@ -19796,7 +19796,7 @@ msgstr "Fehler.~%Ungültige Auswahl.~%Mehr als 2 Audioclips ausgewählt."
 #: plug-ins/crossfadeclips.ny
 #, lisp-format
 msgid "Error.~%Invalid selection.~%Empty space at start/ end of the selection."
-msgstr "Fehler.~%Ungültige Auswahl.~1%ELeerer Platz zu Beginn/Ende der Auswahl."
+msgstr "Fehler.~%Ungültige Auswahl.~%ELeerer Platz zu Beginn/Ende der Auswahl."
 
 #: plug-ins/crossfadeclips.ny
 #, lisp-format
@@ -19886,11 +19886,11 @@ msgstr "Tonhöhe/Tempo"
 
 #: plug-ins/delay.ny
 msgid "Low-quality Pitch Shift"
-msgstr "Tonhöhenänderung mit niedriger Qualität"
+msgstr "Tonhöhenverschiebung mit niedriger Qualität"
 
 #: plug-ins/delay.ny
 msgid "High-quality Pitch Shift"
-msgstr "Tonhöhenänderung mit hoher Qualität"
+msgstr "Tonhöhenverschiebung mit hoher Qualität"
 
 #: plug-ins/delay.ny
 msgid "Pitch change per echo (semitones)"
@@ -19941,12 +19941,12 @@ msgstr "Fehler.~%Kann Datei nicht öffnen~%~s"
 #: plug-ins/eq-xml-to-txt-converter.ny
 #, lisp-format
 msgid "Error.~%File overwrite disallowed:~%\"~a.txt\""
-msgstr "Fehler.~1%FDatei überschreiben verweigert:~%\"~a.txt\""
+msgstr "Fehler.~%FDatei überschreiben verweigert:~%\"~a.txt\""
 
 #: plug-ins/eq-xml-to-txt-converter.ny
 #, lisp-format
 msgid "Error.~%File cannot be written:~%\"~a.txt\""
-msgstr "Fehler.~1%FDatei kann nicht geschrieben werden:~%\"~a.txt\""
+msgstr "Fehler.~%FDatei kann nicht geschrieben werden:~%\"~a.txt\""
 
 #: plug-ins/equalabel.ny
 msgid "Regular Interval Labels"
@@ -20423,12 +20423,12 @@ msgstr "Erlauben"
 #: plug-ins/nyquist-plug-in-installer.ny
 #, lisp-format
 msgid "Success.~%Files written to:~%~s~%"
-msgstr "Erfolg.~1%FDateien geschrieben nach:~%~s~%"
+msgstr "Erfolg.~%FDateien geschrieben nach:~%~s~%"
 
 #: plug-ins/nyquist-plug-in-installer.ny
 #, lisp-format
 msgid "Warning.~%Failed to copy some files:~%"
-msgstr "Warnung.~1%FEinige Dateien konnten nicht kopiert werden:~%"
+msgstr "Warnung.~%FEinige Dateien konnten nicht kopiert werden:~%"
 
 #: plug-ins/nyquist-plug-in-installer.ny
 #, lisp-format
@@ -20743,7 +20743,7 @@ msgstr "Abtastrate: ~a Hz.  Abtastwerte auf ~a Skala.~%~a~%~a"
 #: plug-ins/sample-data-export.ny
 #, lisp-format
 msgid "~a   ~a~%~aSample Rate: ~a Hz.~%Length processed: ~a samples ~a seconds.~a"
-msgstr "~a   ~a~%~aAbtastrate: ~a Hz.~1%LeBearbeitete Länge: ~a Samples ~a Sekunden.~a"
+msgstr "~a   ~a~%~aAbtastrate: ~a Hz.~%LeBearbeitete Länge: ~a Samples ~a Sekunden.~a"
 
 #: plug-ins/sample-data-export.ny
 #, lisp-format

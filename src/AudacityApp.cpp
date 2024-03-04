@@ -161,6 +161,7 @@ It handles initialization and termination by subclassing wxApp.
 
 #include "ExportPluginRegistry.h"
 #include "SettingsWX.h"
+#include "prefs/EffectsPrefs.h"
 
 #ifdef HAS_CUSTOM_URL_HANDLING
 #include "URLSchemesRegistry.h"
@@ -247,18 +248,8 @@ void PopulatePreferences()
    // User requested that the preferences be completely reset
    if (resetPrefs)
    {
-      // pop up a dialogue
-      auto prompt = XO(
-"Reset Preferences?\n\nThis is a one-time question, after an 'install' where you asked to have the Preferences reset.");
-      int action = AudacityMessageBox(
-         prompt,
-         XO("Reset Audacity Preferences"),
-         wxYES_NO, NULL);
-      if (action == wxYES)   // reset
-      {
-         ResetPreferences();
-         writeLang = true;
-      }
+      ResetPreferences();
+      writeLang = true;
    }
 
    // Save the specified language
@@ -1578,7 +1569,7 @@ bool AudacityApp::InitPart2()
 
    //Search for the new plugins
    std::vector<wxString> failedPlugins;
-   if(!playingJournal)
+   if(!playingJournal && !SkipEffectsScanAtStartup.Read())
    {
       auto newPlugins = PluginManager::Get().CheckPluginUpdates();
       if(!newPlugins.empty())
@@ -1740,6 +1731,8 @@ bool AudacityApp::InitPart2()
       URLSchemesRegistry::Get().HandleURL({ utf8Url.data(), utf8Url.length() });
    }
 #endif
+
+   HandleAppInitialized();
 
    return TRUE;
 }

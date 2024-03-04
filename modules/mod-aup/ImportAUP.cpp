@@ -87,15 +87,15 @@ public:
    ~AUPImportFileHandle();
 
    TranslatableString GetErrorMessage() const override;
-   
+
    TranslatableString GetFileDescription() override;
 
    ByteCount GetFileUncompressedBytes() override;
 
-   void Import(ImportProgressListener& progressListener,
-               WaveTrackFactory *trackFactory,
-               TrackHolders &outTracks,
-               Tags *tags) override;
+   void Import(
+      ImportProgressListener& progressListener, WaveTrackFactory* trackFactory,
+      TrackHolders& outTracks, Tags* tags,
+      std::optional<LibFileFormats::AcidizerTags>& outAcidTags) override;
 
    wxInt32 GetStreamCount() override;
 
@@ -304,15 +304,14 @@ auto AUPImportFileHandle::GetFileUncompressedBytes() -> ByteCount
    return 0;
 }
 
-void AUPImportFileHandle::Import(ImportProgressListener& progressListener,
-                                 WaveTrackFactory*,
-                                 TrackHolders&,
-                                 Tags *tags)
+void AUPImportFileHandle::Import(
+   ImportProgressListener& progressListener, WaveTrackFactory*, TrackHolders&,
+   Tags* tags, std::optional<LibFileFormats::AcidizerTags>&)
 {
    BeginImport();
-   
+
    mHasParseError = false;
-   
+
    auto &history = ProjectHistory::Get(mProject);
    auto &tracks = TrackList::Get(mProject);
    auto &viewInfo = ViewInfo::Get(mProject);
@@ -353,7 +352,7 @@ void AUPImportFileHandle::Import(ImportProgressListener& progressListener,
       ImportUtils::ShowMessageBox(mErrorMsg);
       mErrorMsg = {};
    }
-   
+
    // (If we keep this entire source file at all)
 
    sampleCount processed = 0;
@@ -495,7 +494,7 @@ void AUPImportFileHandle::Import(ImportProgressListener& progressListener,
       viewInfo.selectedRegion.setF1(mProjectAttrs.selHigh);
    }
 #endif
-   
+
    progressListener.OnImportResult(ImportProgressListener::ImportResult::Success);
 }
 
@@ -1367,10 +1366,8 @@ bool AUPImportFileHandle::HandleImport(XMLTagHandler *&handler)
    // Guard this call so that C++ exceptions don't propagate through
    // the expat library
    GuardedCall(
-      [&] {
-         ProjectFileManager::Get( mProject ).Import(strAttr, false); },
-      [&] (AudacityException*) {}
-   );
+      [&] { ProjectFileManager::Get(mProject).Import(strAttr, false); },
+      [&](AudacityException*) {});
 
    if (oldNumTracks == tracks.Size())
       return false;

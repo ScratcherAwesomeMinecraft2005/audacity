@@ -14,6 +14,7 @@
 
 #include <wx/event.h>
 
+#include "ClipParameters.h"
 #include "../../../../TrackArt.h"
 #include "../../../../TrackArtist.h"
 #include "Snap.h"
@@ -86,16 +87,19 @@ double GetLeftAdjustLimit(const WaveTrack::Interval& interval,
                           bool isStretchMode)
 {
    if (!adjustingLeftBorder)
-      return interval.Start() + 1.0 / track.GetRate();
+      return std::min(
+         interval.GetSequenceEndTime(),
+         interval.Start() + 1.0 / track.GetRate()
+      );
 
    const auto prevInterval = track.GetNextInterval(interval, PlaybackDirection::backward);
    if(isStretchMode)
       return prevInterval ? prevInterval->End() :
                             std::numeric_limits<double>::lowest();
    if(prevInterval)
-      return std::max(interval.GetClip(0)->GetSequenceStartTime(),
+      return std::max(interval.GetSequenceStartTime(),
                 prevInterval->End());
-   return interval.GetClip(0)->GetSequenceStartTime();
+   return interval.GetSequenceStartTime();
 }
 
 double GetRightAdjustLimit(
@@ -103,7 +107,10 @@ double GetRightAdjustLimit(
    bool isStretchMode)
 {
    if (adjustingLeftBorder)
-      return interval.End() - 1.0 / track.GetRate();
+      return std::max(
+         interval.GetSequenceStartTime(),
+         interval.End() - 1.0 / track.GetRate()
+      );
 
    const auto nextInterval = track.GetNextInterval(interval, PlaybackDirection::forward);
    if (isStretchMode)
@@ -111,9 +118,9 @@ double GetRightAdjustLimit(
                             std::numeric_limits<double>::max();
 
    if(nextInterval)
-      return std::min(interval.GetClip(0)->GetSequenceEndTime(),
+      return std::min(interval.GetSequenceEndTime(),
                       nextInterval->Start());
-   return interval.GetClip(0)->GetSequenceEndTime();
+   return interval.GetSequenceEndTime();
 }
 } // namespace
 
@@ -195,7 +202,7 @@ public:
       , mIsStretchMode { isStretchMode }
       , mInitialBorderPosition { adjustLeftBorder ? mInterval->Start() :
                                              mInterval->End() }
-      , mBorderPosition { mInitialBorderPosition } 
+      , mBorderPosition { mInitialBorderPosition }
       , mRange { GetLeftAdjustLimit( *mInterval, *mTrack, adjustLeftBorder, isStretchMode),
                  GetRightAdjustLimit(*mInterval, *mTrack, adjustLeftBorder, isStretchMode) }
       , mAdjustHandler { std::move(adjustHandler) }
@@ -231,7 +238,7 @@ public:
       const auto dx = eventX - mDragStartX;
 
       const auto& viewInfo = ViewInfo::Get(project);
-      
+
       const auto eventT = viewInfo.PositionToTime(
          viewInfo.TimeToPosition(mInitialBorderPosition, event.rect.x) + dx,
          event.rect.x
@@ -363,7 +370,7 @@ std::shared_ptr<const Channel> WaveClipAdjustBorderHandle::FindChannel() const
 {
    return mpTrack;
 }
-   
+
 WaveClipAdjustBorderHandle::WaveClipAdjustBorderHandle(WaveClipAdjustBorderHandle&&) noexcept = default;
 
 WaveClipAdjustBorderHandle& WaveClipAdjustBorderHandle::operator=(WaveClipAdjustBorderHandle&&) noexcept = default;

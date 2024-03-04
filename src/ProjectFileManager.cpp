@@ -16,10 +16,11 @@ Paul Licameli split from AudacityProject.cpp
 #include <wx/evtloop.h>
 #endif
 
-#include "AdornedRulerPanel.h"
-#include "AudacityDontAskAgainMessageDialog.h"
+#include "AnalyzedWaveClip.h"
 #include "AudacityMessageBox.h"
+#include "AudacityMirProject.h"
 #include "BasicUI.h"
+#include "ClipMirAudioReader.h"
 #include "CodeConversions.h"
 #include "Export.h"
 #include "HelpText.h"
@@ -49,21 +50,20 @@ Paul Licameli split from AudacityProject.cpp
 #include "TimeDisplayMode.h"
 #include "TrackFocus.h"
 #include "TrackPanel.h"
-#include "TrackPanelAx.h"
 #include "UndoManager.h"
+#include "UserException.h"
 #include "WaveClip.h"
 #include "WaveTrack.h"
+#include "WideClip.h"
 #include "XMLFileReader.h"
 #include "import/ImportStreamDialog.h"
 #include "prefs/ImportExportPrefs.h"
-#include "toolbars/SelectionBar.h"
 #include "tracks/playabletrack/wavetrack/WaveTrackUtils.h"
 #include "widgets/FileHistory.h"
 #include "widgets/UnwritableLocationErrorDialog.h"
 #include "widgets/Warning.h"
 #include "wxFileNameWrapper.h"
 #include "wxPanelWrapper.h"
-
 
 #include <optional>
 #include <wx/frame.h>
@@ -181,6 +181,17 @@ auto ProjectFileManager::ReadProjectFile(
    if (bParseSuccess)
    {
       auto& tracks = TrackList::Get(project);
+      // By making a duplicate set of pointers to the existing blocks
+      // on disk, we add one to their reference count, guaranteeing
+      // that their reference counts will never reach zero and thus
+      // the version saved on disk will be preserved until the
+      // user selects Save().
+      // Do this before FixTracks might delete zero-length clips!
+      mLastSavedTracks = TrackList::Create( nullptr );
+      for (auto t : tracks)
+         mLastSavedTracks->Append(
+            move(*t->Duplicate(Track::DuplicateOptions{}.Backup())));
+
       FixTracks(
          tracks,
          // Keep at most one of the error messages
@@ -231,15 +242,6 @@ auto ProjectFileManager::ReadProjectFile(
                wxICON_WARNING,
                &window);
          }
-
-         // By making a duplicate set of pointers to the existing blocks
-         // on disk, we add one to their reference count, guaranteeing
-         // that their reference counts will never reach zero and thus
-         // the version saved on disk will be preserved until the
-         // user selects Save().
-         mLastSavedTracks = TrackList::Create( nullptr );
-         for (auto t : tracks)
-            mLastSavedTracks->Append(std::move(*t->Duplicate()));
       }
    }
 
@@ -403,7 +405,8 @@ bool ProjectFileManager::DoSave(const FilePath & fileName, const bool fromSaveAs
 
    auto &tracks = TrackList::Get(proj);
    for (auto t : tracks)
-      mLastSavedTracks->Append(std::move(*t->Duplicate()));
+      mLastSavedTracks->Append(
+         move(*t->Duplicate(Track::DuplicateOptions{}.Backup())));
 
    // If we get here, saving the project was successful, so we can DELETE
    // any backup project.
@@ -979,7 +982,8 @@ AudacityProject *ProjectFileManager::OpenFile( const ProjectChooserFn &chooser,
 #endif
          auto &project = chooser(false);
          // Undo history is incremented inside this:
-         if (Get(project).Import(fileName)) {
+         if (Get(project).Import(fileName))
+         {
             // Undo history is incremented inside this:
             // Bug 2743: Don't zoom with lof.
             if (!fileName.AfterLast('.').IsSameAs(wxT("lof"), false))
@@ -1301,119 +1305,82 @@ private:
    ImportFileHandle* mImportFileHandle {nullptr};
    std::unique_ptr<BasicUI::ProgressDialog> mProgressDialog;
 };
+} // namespace
 
-struct UserResponseToMirPrompt
+bool ProjectFileManager::Import(const FilePath& fileName, bool addToHistory)
 {
-   const bool yes;
-   const bool readFromPreference;
-};
-
-auto FormatTempo(double value)
-{
-   auto rounded = std::to_string(std::round(value * 100) / 100);
-   rounded.erase(rounded.find_last_not_of('0') + 1, std::string::npos);
-   rounded.erase(rounded.find_last_not_of('.') + 1, std::string::npos);
-   return rounded;
+   return Import(std::vector<FilePath> { fileName }, addToHistory);
 }
 
-UserResponseToMirPrompt
-UserWantsMirResultToConfigureProject(AudacityProject& project, double qpm)
+namespace
 {
-   const auto policy = ImportExportPrefs::MusicFileImportSetting.Read();
-   if (policy == wxString("Ask"))
-   {
-      const auto displayedTempo = FormatTempo(qpm);
-      const auto message =
-         XO("Audacity detected this file to be %s bpm.\nWould you like to enable music view and set the project tempo to %s?")
-            .Format(displayedTempo, displayedTempo);
-      AudacityDontAskAgainMessageDialog m(
-         &GetProjectPanel(project), XO("Music Import"), message);
-      const auto yes = m.ShowDialog();
-      if (m.IsChecked())
-         ImportExportPrefs::MusicFileImportSetting.Write(
-            yes ? wxString("Yes") : wxString("No"));
-      constexpr auto readFromPreference = false;
-      return { yes, readFromPreference };
-   }
-   else{
-      constexpr auto readFromPreference = true;
-      return { policy == wxString("Yes"), readFromPreference };
-   }
-}
-
-void ReactOnMusicFileImport(
-   const std::string& fileName, const TrackHolders& newTracks,
-   AudacityProject& project)
+std::vector<std::shared_ptr<MIR::AnalyzedAudioClip>> RunTempoDetection(
+   const std::vector<std::shared_ptr<ClipMirAudioReader>>& readers,
+   const MIR::ProjectInterface& project, bool projectWasEmpty)
 {
-   const auto waveTracks = newTracks[0]->Any<WaveTrack>();
-   if (waveTracks.size() != 1)
-      // Only do this when exactly one track is added.
-      return;
+   const auto isBeatsAndMeasures = project.ViewIsBeatsAndMeasures();
+   const auto projectTempo = project.GetTempo();
 
-   WaveTrack& newTrack = **waveTracks.begin();
-   const auto newTrackDuration =
-      newTrack.GetEndTime() - newTrack.GetStartTime();
+   using namespace BasicUI;
+   auto progress = MakeProgress(
+      XO("Music Information Retrieval"), XO("Analyzing imported audio"),
+      ProgressShowCancel);
+   auto count = 0;
+   const auto reportProgress = [&](double progressFraction) {
+      const auto result = progress->Poll(
+         (count + progressFraction) / readers.size() * 1000, 1000);
+      if (result != ProgressResult::Success)
+         throw UserException {};
+   };
 
-   MIR::MusicInformation musicInfo { fileName, newTrackDuration };
-
-   if (!musicInfo)
-      return;
-
-   const auto isFirstWaveTrack =
-      TrackList::Get(project).Any<WaveTrack>().empty();
-   const auto isBeatsAndMeasures =
-      TimeDisplayModePreference.ReadEnum() == TimeDisplayMode::BeatsAndMeasures;
-
-   if (!isFirstWaveTrack && !isBeatsAndMeasures)
-      return;
-
-   const auto syncInfo = musicInfo.GetProjectSyncInfo(
-      ProjectTimeSignature::Get(project).GetTempo());
-   const auto clips = newTrack.Intervals();
-   assert(clips.size() == 1);
-   const auto clip = *clips.begin();
-
-   if (!isFirstWaveTrack && isBeatsAndMeasures)
-   {
-      clip->SetRawAudioTempo(syncInfo.rawAudioTempo);
-      clip->TrimQuarternotesFromRight(syncInfo.excessDurationInQuarternotes);
-      clip->StretchBy(syncInfo.stretchMinimizingPowOfTwo);
-   }
-   else
-   {
-      // User interaction needed, do this asynchronously not to freeze the UI
-      // during drag-and-drop.
-      const auto pProj = project.shared_from_this();
-      BasicUI::CallAfter([=] {
-         const auto ans = UserWantsMirResultToConfigureProject(
-            *pProj, syncInfo.rawAudioTempo);
-         if (isBeatsAndMeasures || ans.yes)
-         {
-            clip->SetRawAudioTempo(syncInfo.rawAudioTempo);
-            clip->TrimQuarternotesFromRight(
-               syncInfo.excessDurationInQuarternotes);
-         }
-         if (ans.yes)
-         {
-            AdornedRulerPanel::Get(*pProj).SetTimeDisplayMode(
-               TimeDisplayMode::BeatsAndMeasures);
-            ProjectTimeSignature::Get(*pProj).SetTempo(syncInfo.rawAudioTempo);
-         }
-         else if (isBeatsAndMeasures)
-            clip->StretchBy(syncInfo.stretchMinimizingPowOfTwo);
-         if (!ans.readFromPreference && ans.yes)
-            UndoManager::Get(*pProj).PushState(
-               XO("Configure Project from Music File"),
-               XO("Automatic Music Configuration"));
+   std::vector<std::shared_ptr<MIR::AnalyzedAudioClip>> analyzedClips;
+   analyzedClips.reserve(readers.size());
+   std::transform(
+      readers.begin(), readers.end(), std::back_inserter(analyzedClips),
+      [&](const std::shared_ptr<ClipMirAudioReader>& reader) {
+         const MIR::ProjectSyncInfoInput input {
+            *reader,      reader->filename, reader->tags,       reportProgress,
+            projectTempo, projectWasEmpty,  isBeatsAndMeasures,
+         };
+         auto syncInfo = MIR::GetProjectSyncInfo(input);
+         ++count;
+         return std::make_shared<AnalyzedWaveClip>(reader, syncInfo);
       });
-   }
+   return analyzedClips;
 }
 } // namespace
 
+bool ProjectFileManager::Import(
+   const std::vector<FilePath>& fileNames, bool addToHistory)
+{
+   const auto projectWasEmpty =
+      TrackList::Get(mProject).Any<WaveTrack>().empty();
+   std::vector<std::shared_ptr<ClipMirAudioReader>> resultingReaders;
+   const auto success = std::all_of(
+      fileNames.begin(), fileNames.end(), [&](const FilePath& fileName) {
+         std::shared_ptr<ClipMirAudioReader> resultingReader;
+         const auto success = Import(fileName, addToHistory, resultingReader);
+         if (success && resultingReader)
+            resultingReaders.push_back(std::move(resultingReader));
+         return success;
+      });
+   if (success && !resultingReaders.empty())
+   {
+      const auto pProj = mProject.shared_from_this();
+      BasicUI::CallAfter([=] {
+         AudacityMirProject mirInterface { *pProj };
+         const auto analyzedClips =
+            RunTempoDetection(resultingReaders, mirInterface, projectWasEmpty);
+         MIR::SynchronizeProject(analyzedClips, mirInterface, projectWasEmpty);
+      });
+   }
+   return success;
+}
+
 // If pNewTrackList is passed in non-NULL, it gets filled with the pointers to NEW tracks.
 bool ProjectFileManager::Import(
-   const FilePath &fileName,
-   bool addToHistory /* = true */)
+   const FilePath& fileName, bool addToHistory,
+   std::shared_ptr<ClipMirAudioReader>& resultingReader)
 {
    auto &project = mProject;
    auto &projectFileIO = ProjectFileIO::Get(project);
@@ -1481,12 +1448,10 @@ bool ProjectFileManager::Import(
 #endif
 
       ImportProgress importProgress(project);
-      bool success = Importer::Get().Import(project, fileName,
-                                            &importProgress,
-                                            &WaveTrackFactory::Get( project ),
-                                            newTracks,
-                                            newTags.get(),
-                                            errorMessage);
+      std::optional<LibFileFormats::AcidizerTags> acidTags;
+      bool success = Importer::Get().Import(
+         project, fileName, &importProgress, &WaveTrackFactory::Get(project),
+         newTracks, newTags.get(), acidTags, errorMessage);
       if (!errorMessage.empty()) {
          // Error message derived from Importer::Import
          // Additional help via a Help button links to the manual.
@@ -1501,7 +1466,14 @@ bool ProjectFileManager::Import(
          for (auto track : *trackList)
             track->OnProjectTempoChange(projectTempo);
 
-      ReactOnMusicFileImport(fileName.ToStdString(), newTracks, project);
+      if (!newTracks.empty() && newTracks[0])
+      {
+         const auto waveTracks = (*newTracks[0]).Any<WaveTrack>();
+         if (waveTracks.size() == 1)
+            resultingReader.reset(new ClipMirAudioReader {
+               std::move(acidTags), fileName.ToStdString(),
+               **waveTracks.begin() });
+      }
 
       if (addToHistory) {
          FileHistory::Global().Append(fileName);

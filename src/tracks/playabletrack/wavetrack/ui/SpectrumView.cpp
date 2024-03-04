@@ -17,8 +17,8 @@ Paul Licameli split from WaveChannelView.cpp
 #include "Sequence.h"
 #include "Spectrum.h"
 
+#include "ClipParameters.h"
 #include "SpectrumVRulerControls.h"
-#include "WaveChannelView.h"
 #include "WaveChannelViewConstants.h"
 
 #include "../../../ui/BrushHandle.h"
@@ -136,10 +136,8 @@ static UIHandlePtr BrushHandleHitTest(
    result = AssignUIHandlePtr(holder, result);
 
    //Make sure we are within the selected track
-   // Adjusting the selection edges can be turned off in
-   // the preferences...
    auto pTrack = pChannelView->FindTrack();
-   if (!pTrack->GetSelected() || !viewInfo.bAdjustSelectionEdges)
+   if (!pTrack->GetSelected())
    {
       return result;
    }
@@ -858,7 +856,8 @@ void DrawClipSpectrum(TrackPanelDrawingContext &context, const WaveTrack &track,
 }
 
 void SpectrumView::DoDraw(TrackPanelDrawingContext& context, size_t channel,
-   const WaveTrack &track, const WaveClip* selectedClip, const wxRect & rect)
+   const WaveTrack &track, const WaveTrack::Interval* selectedClip,
+   const wxRect & rect)
 {
    const auto artist = TrackArtist::Get( context );
    const auto &blankSelectedBrush = artist->blankSelectedBrush;
@@ -875,10 +874,14 @@ void SpectrumView::DoDraw(TrackPanelDrawingContext& context, size_t channel,
    auto pLeader = *track.GetHolder()->Find(&track);
    assert(pLeader->IsLeader());
 
-   for (const auto pInterval :
-      static_cast<const WaveTrack*>(pLeader)->GetChannel(channel)->Intervals())
+   for (const auto pInterval : static_cast<const WaveTrack*>(pLeader)
+      ->GetChannel(channel)->Intervals()
+   ) {
+      bool selected = selectedClip &&
+         WaveChannelView::WideClipContains(*selectedClip, pInterval->GetClip());
       DrawClipSpectrum(context, track, *pInterval, rect, mpSpectralData,
-         &pInterval->GetClip() == selectedClip);
+         selected);
+   }
 
    DrawBoldBoundaries(context, track, rect);
 }
@@ -888,7 +891,7 @@ void SpectrumView::Draw(
 {
    if ( iPass == TrackArtist::PassTracks ) {
       auto &dc = context.dc;
- 
+
       const auto wt = std::static_pointer_cast<const WaveTrack>(
          FindTrack()->SubstitutePendingChangedTrack());
 
@@ -902,7 +905,7 @@ void SpectrumView::Draw(
       auto waveChannelView = GetWaveChannelView().lock();
       wxASSERT(waveChannelView.use_count());
 
-      auto selectedClip = waveChannelView->GetSelectedClip().lock();
+      auto selectedClip = waveChannelView->GetSelectedClip();
       DoDraw(context, GetChannelIndex(), *wt, selectedClip.get(), rect);
 
 #if defined(__WXMAC__)

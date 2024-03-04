@@ -282,9 +282,9 @@ function( audacity_append_common_compiler_options var use_pch )
 
    # Definitions controlled by the AUDACITY_BUILD_LEVEL switch
    if( AUDACITY_BUILD_LEVEL EQUAL 0 )
-      list( APPEND ${var} -DIS_ALPHA -DUSE_ALPHA_MANUAL )
+      list( APPEND ${var} -DIS_ALPHA )
    elseif( AUDACITY_BUILD_LEVEL EQUAL 1 )
-      list( APPEND ${var} -DIS_BETA -DUSE_ALPHA_MANUAL )
+      list( APPEND ${var} -DIS_BETA )
    else()
       list( APPEND ${var} -DIS_RELEASE )
    endif()
@@ -492,6 +492,7 @@ function( audacity_module_fn NAME SOURCES IMPORT_TARGETS
 
       if( NOT CMAKE_SYSTEM_NAME MATCHES "Windows|Darwin" )
          set_target_property_all(${TARGET} INSTALL_RPATH "$ORIGIN:$ORIGIN/..")
+         set_target_property_all(${TARGET} BUILD_RPATH "$ORIGIN:$ORIGIN/..")
          install( TARGETS ${TARGET} OPTIONAL DESTINATION ${_MODDIR} )
       endif()
 
@@ -506,6 +507,7 @@ function( audacity_module_fn NAME SOURCES IMPORT_TARGETS
 
       if( NOT CMAKE_SYSTEM_NAME MATCHES "Windows|Darwin" )
          set_target_property_all(${TARGET} INSTALL_RPATH "$ORIGIN")
+         set_target_property_all(${TARGET} BUILD_RPATH "$ORIGIN")
          install(TARGETS ${TARGET} DESTINATION ${_PKGLIB} )
       endif()
    endif()

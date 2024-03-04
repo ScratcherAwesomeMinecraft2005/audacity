@@ -290,7 +290,7 @@ void FormatMenuTable::OnFormatChange(wxCommandEvent & event)
    // which is always associated with a leader track
    assert(pTrack->IsLeader());
    pTrack->ConvertToSampleFormat(newFormat, progressUpdate);
-         
+
    ProjectHistory::Get( *project )
    /* i18n-hint: The strings name a track and a format */
       .PushState(XO("Changed '%s' to %s")
@@ -677,12 +677,9 @@ BEGIN_POPUP_MENU(WaveTrackMenuTable)
 
       AppendItem( "Split", OnSplitStereoID, XXO("Spl&it Stereo Track"),
          POPUP_MENU_FN( OnSplitStereo ), enableSplitStereo );
-   // DA: Uses split stereo track and then drag pan sliders for split-stereo-to-mono
-   #ifndef EXPERIMENTAL_DA
       AppendItem( "SplitToMono", OnSplitStereoMonoID,
          XXO("Split Stereo to Mo&no"), POPUP_MENU_FN( OnSplitStereoMono ),
          enableSplitStereo );
-   #endif
    EndSection();
 
    BeginSection( "Format" );
@@ -779,7 +776,7 @@ void WaveTrackMenuTable::OnMergeStereo(wxCommandEvent &)
                   std::abs(a->End() - b->End()) < eps &&
                   eqTrims(a->GetTrimLeft(), b->GetTrimLeft()) &&
                   eqTrims(a->GetTrimRight(), b->GetTrimRight()) &&
-                  a->StretchRatioEquals(b->GetStretchRatio());
+                  a->HasEqualPitchAndSpeed(*b);
             });
          if(it == rightIntervals.end())
             return false;
@@ -836,7 +833,7 @@ void WaveTrackMenuTable::OnMergeStereo(wxCommandEvent &)
    tracks.Insert(*first, std::move(*mix));
    tracks.Remove(*left);
    tracks.Remove(*right);
-   
+
    for(const auto& channel : newTrack->Channels())
    {
       // Set NEW track heights and minimized state
@@ -873,7 +870,7 @@ void WaveTrackMenuTable::SplitStereo(bool stereo)
 
    for (const auto track : unlinkedTracks) {
       auto &view = ChannelView::Get(*track->GetChannel(0));
-      
+
       //make sure no channel is smaller than its minimum height
       if (view.GetHeight() < view.GetMinimizedHeight())
          view.SetExpandedHeight(view.GetMinimizedHeight());
@@ -1078,14 +1075,10 @@ static const struct WaveTrackTCPLines
       { TCPLine::kItemPan, kTrackInfoSliderHeight, kTrackInfoSliderExtra,
         PanSliderDrawFunction },
 
-#ifdef EXPERIMENTAL_DA
-      // DA: Does not have status information for a track.
-#else
       { TCPLine::kItemStatusInfo1, 12, 0,
         Status1DrawFunction },
       { TCPLine::kItemStatusInfo2, 12, 0,
         Status2DrawFunction },
-#endif
 
    } );
 } } waveTrackTCPLines;
