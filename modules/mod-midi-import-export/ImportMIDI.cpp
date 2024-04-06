@@ -56,10 +56,8 @@ bool DoImportMIDI( AudacityProject &project, const FilePath &fileName )
       // the newly imported track is muted.
       const bool projectHasSolo =
          !(tracks.Any<PlayableTrack>() + &PlayableTrack::GetSolo).empty();
-#ifdef EXPERIMENTAL_MIDI_OUT
       if (projectHasSolo)
          pTrack->SetMute(true);
-#endif
 
       ProjectHistory::Get( project )
          .PushState(
@@ -226,7 +224,7 @@ void MIDIImportFileHandle::Import(
 {
    auto newTrack = std::make_shared<NoteTrack>();
    if (::ImportMIDI(mFileName, newTrack.get())) {
-      outTracks.push_back(TrackList::Temporary(nullptr, newTrack));
+      outTracks.push_back(newTrack);
       progressListener.OnImportResult(
          ImportProgressListener::ImportResult::Success);
    }

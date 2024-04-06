@@ -46,12 +46,25 @@ for drawing different aspects of the label and its text box.
 #include "TimeWarper.h"
 #include "AudacityMessageBox.h"
 
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
 const FileNames::FileType LabelTrack::SubripFiles{ XO("SubRip text file"), { wxT("srt") }, true };
 const FileNames::FileType LabelTrack::WebVTTFiles{ XO("WebVTT file"), { wxT("vtt") }, true };
-#endif
 
 LabelTrack::Interval::~Interval() = default;
+
+double LabelTrack::Interval::Start() const
+{
+   return mpTrack->GetLabel(index)->selectedRegion.t0();
+}
+
+double LabelTrack::Interval::End() const
+{
+   return mpTrack->GetLabel(index)->selectedRegion.t1();
+}
+
+size_t LabelTrack::Interval::NChannels() const
+{
+   return 1;
+}
 
 std::shared_ptr<ChannelInterval>
 LabelTrack::Interval::DoGetChannel(size_t iChannel)
@@ -128,7 +141,6 @@ auto LabelTrack::ClassTypeInfo() -> const TypeInfo &
 
 Track::Holder LabelTrack::PasteInto(AudacityProject &, TrackList &list) const
 {
-   assert(IsLeader());
    auto pNewTrack = std::make_shared<LabelTrack>();
    pNewTrack->Init(*this);
    pNewTrack->Paste(0.0, *this);
@@ -145,9 +157,7 @@ auto LabelTrack::MakeInterval(size_t index) -> std::shared_ptr<Interval>
 {
    if (index >= mLabels.size())
       return {};
-   auto &label = mLabels[index];
-   return std::make_shared<Interval>(
-      *this, label.getT0(), label.getT1(), index);
+   return std::make_shared<Interval>(*this, index);
 }
 
 std::shared_ptr<WideChannelGroupInterval>
@@ -179,21 +189,8 @@ void LabelTrack::MoveTo(double origin)
    }
 }
 
-void LabelTrack::DoOnProjectTempoChange(
-   const std::optional<double>& oldTempo, double newTempo)
-{
-   assert(IsLeader());
-   if (!oldTempo.has_value())
-      return;
-   const auto ratio = *oldTempo / newTempo;
-   for (auto& label : mLabels)
-      label.selectedRegion.setTimes(
-         label.getT0() * ratio, label.getT1() * ratio);
-}
-
 void LabelTrack::Clear(double b, double e)
 {
-   assert(IsLeader());
    // May DELETE labels, so use subscripts to iterate
    for (size_t i = 0; i < mLabels.size(); ++i) {
       auto &labelStruct = mLabels[i];
@@ -348,12 +345,11 @@ void LabelTrack::SetSelected( bool s )
          this->SharedPointer<LabelTrack>(), {}, -1, -1 });
 }
 
-TrackListHolder LabelTrack::Clone(bool) const
+Track::Holder LabelTrack::Clone(bool) const
 {
-   assert(IsLeader());
    auto result = std::make_shared<LabelTrack>(*this, ProtectedCreationArg{});
    result->Init(*this);
-   return TrackList::Temporary(nullptr, result, nullptr);
+   return result;
 }
 
 // Adjust label's left or right boundary, depending which is requested.
@@ -428,7 +424,6 @@ ImportExportPrefs::RegisteredControls reg{ wxT("LabelStyle"), AddControls };
 
 }
 
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
 static double SubRipTimestampToDouble(const wxString &ts)
 {
    wxString::const_iterator end;
@@ -440,7 +435,6 @@ static double SubRipTimestampToDouble(const wxString &ts)
    return dt.GetHour() * 3600 + dt.GetMinute() * 60 + dt.GetSecond()
       + dt.GetMillisecond() / 1000.0;
 }
-#endif
 
 LabelStruct LabelStruct::Import(wxTextFile &file, int &index, LabelFormat format)
 {
@@ -516,7 +510,6 @@ LabelStruct LabelStruct::Import(wxTextFile &file, int &index, LabelFormat format
       }
       break;
    }
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
    case LabelFormat::SUBRIP:
    {
       if ((int)file.GetLineCount() < index + 2)
@@ -555,7 +548,6 @@ LabelStruct LabelStruct::Import(wxTextFile &file, int &index, LabelFormat format
 
       break;
    }
-#endif
    default:
       throw BadFormatException{};
    }
@@ -563,7 +555,6 @@ LabelStruct LabelStruct::Import(wxTextFile &file, int &index, LabelFormat format
    return LabelStruct{ sr, title };
 }
 
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
 static wxString SubRipTimestampFromDouble(double timestamp, bool webvtt)
 {
    // Note that the SubRip format always uses the comma as its separator...
@@ -580,7 +571,6 @@ static wxString SubRipTimestampFromDouble(double timestamp, bool webvtt)
    // be shifted (assuming the user is not in the UTC timezone).
    return dt.Format(webvtt ? webvttFormat : subripFormat, wxDateTime::UTC);
 }
-#endif
 
 void LabelStruct::Export(wxTextFile &file, LabelFormat format, int index) const
 {
@@ -612,7 +602,6 @@ void LabelStruct::Export(wxTextFile &file, LabelFormat format, int index) const
       // Additional lines in future formats should also start with '\'.
       break;
    }
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
    case LabelFormat::SUBRIP:
    case LabelFormat::WEBVTT:
    {
@@ -629,7 +618,6 @@ void LabelStruct::Export(wxTextFile &file, LabelFormat format, int index) const
 
       break;
    }
-#endif
    }
 }
 
@@ -702,12 +690,10 @@ auto LabelStruct::RegionRelation(
 /// Export labels including label start and end-times.
 void LabelTrack::Export(wxTextFile & f, LabelFormat format) const
 {
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
    if (format == LabelFormat::WEBVTT) {
       f.AddLine(wxT("WEBVTT"));
       f.AddLine(wxT(""));
    }
-#endif
 
    // PRL: to do: export other selection fields
    int index = 0;
@@ -718,25 +704,21 @@ void LabelTrack::Export(wxTextFile & f, LabelFormat format) const
 LabelFormat LabelTrack::FormatForFileName(const wxString & fileName)
 {
    LabelFormat format = LabelFormat::TEXT;
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
    if (fileName.Right(4).CmpNoCase(wxT(".srt")) == 0) {
       format = LabelFormat::SUBRIP;
    } else if (fileName.Right(4).CmpNoCase(wxT(".vtt")) == 0) {
       format = LabelFormat::WEBVTT;
    }
-#endif
    return format;
 }
 
 /// Import labels, handling files with or without end-times.
 void LabelTrack::Import(wxTextFile & in, LabelFormat format)
 {
-#ifdef EXPERIMENTAL_SUBRIP_LABEL_FORMATS
    if (format == LabelFormat::WEBVTT) {
       ::AudacityMessageBox( XO("Importing WebVTT files is not currently supported.") );
       return;
    }
-#endif
 
    int lines = in.GetLineCount();
 
@@ -832,7 +814,6 @@ XMLTagHandler *LabelTrack::HandleXMLChild(const std::string_view& tag)
 void LabelTrack::WriteXML(XMLWriter &xmlFile) const
 // may throw
 {
-   assert(IsLeader());
    int len = mLabels.size();
 
    xmlFile.StartTag(wxT("labeltrack"));
@@ -851,9 +832,8 @@ void LabelTrack::WriteXML(XMLWriter &xmlFile) const
    xmlFile.EndTag(wxT("labeltrack"));
 }
 
-TrackListHolder LabelTrack::Cut(double t0, double t1)
+Track::Holder LabelTrack::Cut(double t0, double t1)
 {
-   assert(IsLeader());
    auto tmp = Copy(t0, t1);
    Clear(t0, t1);
    return tmp;
@@ -873,7 +853,7 @@ Track::Holder LabelTrack::SplitCut(double t0, double t1)
 }
 #endif
 
-TrackListHolder LabelTrack::Copy(double t0, double t1, bool) const
+Track::Holder LabelTrack::Copy(double t0, double t1, bool) const
 {
    auto tmp = std::make_shared<LabelTrack>();
    tmp->Init(*this);
@@ -921,7 +901,7 @@ TrackListHolder LabelTrack::Copy(double t0, double t1, bool) const
    }
    lt->mClipLen = (t1 - t0);
 
-   return TrackList::Temporary(nullptr, tmp, nullptr);
+   return tmp;
 }
 
 
@@ -1025,7 +1005,6 @@ bool LabelTrack::Repeat(double t0, double t1, int n)
 
 void LabelTrack::SyncLockAdjust(double oldT1, double newT1)
 {
-   assert(IsLeader());
    if (newT1 > oldT1) {
       // Insert space within the track
 
@@ -1043,7 +1022,6 @@ void LabelTrack::SyncLockAdjust(double oldT1, double newT1)
 
 void LabelTrack::Silence(double t0, double t1, ProgressReporter)
 {
-   assert(IsLeader());
    int len = mLabels.size();
 
    // mLabels may resize as we iterate, so use subscripting
@@ -1090,7 +1068,6 @@ void LabelTrack::Silence(double t0, double t1, ProgressReporter)
 
 void LabelTrack::InsertSilence(double t, double len)
 {
-   assert(IsLeader());
    for (auto &labelStruct: mLabels) {
       double t0 = labelStruct.getT0();
       double t1 = labelStruct.getT1();
