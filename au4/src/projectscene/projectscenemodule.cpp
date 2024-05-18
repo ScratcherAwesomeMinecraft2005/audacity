@@ -23,18 +23,25 @@
 
 #include <QtQml>
 
+#include "types/projectscenetypes.h"
+
+#include "ui/iuiactionsregister.h"
+
+#include "internal/projectsceneuiactions.h"
+
+#include "internal/projectsceneconfiguration.h"
+
 #include "view/toolbars/projecttoolbarmodel.h"
 #include "view/trackspanel/trackslistmodel.h"
 
+#include "view/clipsview/trackslistclipsmodel.h"
+#include "view/clipsview/clipslistmodel.h"
 #include "view/clipsview/waveview.h"
-#include "view/clipsview/clipsmodel.h"
-#include "view/clipsview/trackclipsitem.h"
-#include "view/clipsview/clipitem.h"
-
-#include "types/tracktypes.h"
+#include "view/clipsview/timelinecontext.h"
 
 using namespace au::projectscene;
 using namespace muse::modularity;
+using namespace muse::ui;
 
 static void projectscene_init_qrc()
 {
@@ -46,33 +53,51 @@ std::string ProjectSceneModule::moduleName() const
     return "projectscene";
 }
 
+void ProjectSceneModule::registerResources()
+{
+    projectscene_init_qrc();
+}
+
 void ProjectSceneModule::registerExports()
 {
+    m_uiActions = std::make_shared<ProjectSceneUiActions>();
+    m_configuration = std::make_shared<ProjectSceneConfiguration>();
+
+    ioc()->registerExport<IProjectSceneConfiguration>(moduleName(), m_configuration);
 }
 
 void ProjectSceneModule::resolveImports()
 {
+    auto ar = ioc()->resolve<IUiActionsRegister>(moduleName());
+    if (ar) {
+        ar->reg(m_uiActions);
+    }
 }
 
 void ProjectSceneModule::registerUiTypes()
 {
+    // types
+    qmlRegisterUncreatableType<TrackTypes>("Audacity.ProjectScene", 1, 0, "TrackType", "Not creatable from QML");
+    qmlRegisterUncreatableType<ClipKey>("Audacity.ProjectScene", 1, 0, "ClipKey", "Not creatable from QML");
+
     // toolbars
     qmlRegisterType<ProjectToolBarModel>("Audacity.ProjectScene", 1, 0, "ProjectToolBarModel");
 
     // tracks panel
     qmlRegisterType<TracksListModel>("Audacity.ProjectScene", 1, 0, "TracksListModel");
-    qmlRegisterUncreatableType<TrackTypes>("Audacity.ProjectScene", 1, 0, "TrackType",
-                                           "Not creatable as it is an enum type");
 
     // clips view
+    qmlRegisterType<TracksListClipsModel>("Audacity.ProjectScene", 1, 0, "TracksListClipsModel");
+    qmlRegisterType<ClipsListModel>("Audacity.ProjectScene", 1, 0, "ClipsListModel");
+    qmlRegisterType<TimelineContext>("Audacity.ProjectScene", 1, 0, "TimelineContext");
     qmlRegisterType<WaveView>("Audacity.ProjectScene", 1, 0, "WaveView");
-    qmlRegisterType<ClipsModel>("Audacity.ProjectScene", 1, 0, "ClipsModel");
-    qmlRegisterUncreatableType<WaveSource>("Audacity.ProjectScene", 1, 0, "WaveSource", "Not creatable from QML");
-    qmlRegisterUncreatableType<TrackClipsItem>("Audacity.ProjectScene", 1, 0, "TrackClipsItem", "Not creatable from QML");
-    qmlRegisterUncreatableType<ClipItem>("Audacity.ProjectScene", 1, 0, "ClipItem", "Not creatable from QML");
 }
 
-void ProjectSceneModule::registerResources()
+void ProjectSceneModule::onInit(const muse::IApplication::RunMode& mode)
 {
-    projectscene_init_qrc();
+    if (mode != muse::IApplication::RunMode::GuiApp) {
+        return;
+    }
+
+    m_configuration->init();
 }

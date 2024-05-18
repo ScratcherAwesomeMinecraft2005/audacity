@@ -26,6 +26,16 @@ set(MODULE_QRC projectscene.qrc)
 set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/projectscenemodule.cpp
     ${CMAKE_CURRENT_LIST_DIR}/projectscenemodule.h
+    ${CMAKE_CURRENT_LIST_DIR}/iprojectsceneconfiguration.h
+
+    ${CMAKE_CURRENT_LIST_DIR}/types/projectscenetypes.h
+    ${CMAKE_CURRENT_LIST_DIR}/types/wavestyle.h
+
+    ${CMAKE_CURRENT_LIST_DIR}/internal/projectsceneconfiguration.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/projectsceneconfiguration.h
+
+    ${CMAKE_CURRENT_LIST_DIR}/internal/projectsceneuiactions.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/projectsceneuiactions.h
 
     ${CMAKE_CURRENT_LIST_DIR}/view/trackspanel/trackslistmodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/trackspanel/trackslistmodel.h
@@ -35,24 +45,27 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/projecttoolbarmodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/projecttoolbarmodel.h
 
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/clipslistmodel.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/clipslistmodel.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/timelinecontext.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/timelinecontext.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/trackslistclipsmodel.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/trackslistclipsmodel.h
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/waveview.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/waveview.h
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/wavesource.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/wavesource.h
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/clipsmodel.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/clipsmodel.h
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/trackclipsitem.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/trackclipsitem.h
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/clipitem.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/clipitem.h
-
-    ${CMAKE_CURRENT_LIST_DIR}/types/tracktypes.h
     )
 
 set(MODULE_QML_IMPORT ${CMAKE_CURRENT_LIST_DIR}/qml )
 
 set(MODULE_LINK processing)
 
-setup_module()
+set(MODULE_INCLUDE
+    ${CLIPSVIEW_V1_INC}
+)
 
+set(MODULE_DEF
+    ${CLIPSVIEW_V1_DEF}
+)
+
+setup_module()
 

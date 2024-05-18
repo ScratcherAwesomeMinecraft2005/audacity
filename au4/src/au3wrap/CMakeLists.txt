@@ -26,16 +26,31 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/au3wrapmodule.h
 
     ${CMAKE_CURRENT_LIST_DIR}/wxtypes_convert.h
-    ${CMAKE_CURRENT_LIST_DIR}/audacity3project.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/audacity3project.h
-    ${CMAKE_CURRENT_LIST_DIR}/audacity3playback.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/audacity3playback.h
+    ${CMAKE_CURRENT_LIST_DIR}/au3project.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/au3project.h
+    ${CMAKE_CURRENT_LIST_DIR}/iau3wavepainter.h
+    ${CMAKE_CURRENT_LIST_DIR}/iau3playback.h
+    ${CMAKE_CURRENT_LIST_DIR}/iau3audiooutput.h
 
     ${CMAKE_CURRENT_LIST_DIR}/mocks/au3settingsmock.cpp
     ${CMAKE_CURRENT_LIST_DIR}/mocks/au3settingsmock.h
 
     ${CMAKE_CURRENT_LIST_DIR}/internal/wxlogwrap.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/wxlogwrap.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/domconverter.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/domconverter.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/domaccessor.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/domaccessor.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/processinginteraction.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/processinginteraction.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3wavepainter.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3wavepainter.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/WaveformScale.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/WaveformScale.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3playback.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3playback.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3audiooutput.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3audiooutput.h
     )
 
 # ==================================
@@ -91,6 +106,9 @@ set(AU3_DEF
     -DSCREEN_GEOMETRY_API=
     -DSQLITE_HELPERS_API=
 
+    -DGRAPHICS_API=
+    -DWAVE_TRACK_PAINT_API=
+
     -DEXPERIMENTAL_SPECTRAL_EDITING
 )
 
@@ -145,6 +163,11 @@ set(AU3_INCLUDE
 
     # compile after update 04.26
     ${AU3_LIBRARIES}/lib-sqlite-helpers
+
+    # track paint
+    ${AU3_LIBRARIES}/lib-time-frequency-selection
+    ${AU3_LIBRARIES}/lib-graphics
+    ${AU3_LIBRARIES}/lib-wave-track-paint
 )
 
 set(AU3_ADD_AS_SRC ON)
@@ -444,6 +467,24 @@ if (AU3_ADD_AS_SRC)
 
     # end dependencies of lib-audio-io
 
+    # track paint
+    ${AU3_LIBRARIES}/lib-wave-track-paint/GraphicsDataCache.cpp
+    ${AU3_LIBRARIES}/lib-wave-track-paint/GraphicsDataCache.h
+    ${AU3_LIBRARIES}/lib-wave-track-paint/PixelSampleMapper.cpp
+    ${AU3_LIBRARIES}/lib-wave-track-paint/PixelSampleMapper.h
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WaveBitmapCache.cpp
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WaveBitmapCache.h
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WaveDataCache.cpp
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WaveDataCache.h
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WaveData.cpp
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WaveData.h
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WavePaintParameters.cpp
+    ${AU3_LIBRARIES}/lib-wave-track-paint/waveform/WavePaintParameters.h
+
+    ${AU3_LIBRARIES}/lib-graphics/FrameStatistics.cpp
+    ${AU3_LIBRARIES}/lib-graphics/FrameStatistics.h
+
+
     # Requires wxApp, so we won't use it
     # ${AU3_LIBRARIES}/lib-wx-init/SettingsWX.cpp
     # ${AU3_LIBRARIES}/lib-wx-init/SettingsWX.h
@@ -514,4 +555,5 @@ set(MODULE_SRC ${MODULE_SRC} ${AU3_SRC})
 
 set(MODULE_USE_PCH_NONE ON)
 set(MODULE_USE_UNITY_NONE ON)
+
 setup_module()

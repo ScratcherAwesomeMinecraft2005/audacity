@@ -1,74 +1,100 @@
 #include "waveview.h"
 
-#include <QSGGeometryNode>
-#include <QSGFlatColorMaterial>
+#include <QPainter>
 
-#include "processing/dom/wave.h"
+#include "timelinecontext.h"
 
 #include "log.h"
 
 using namespace au::projectscene;
-using namespace au::processing;
 
 WaveView::WaveView(QQuickItem* parent)
-    : QQuickItem(parent)
+    : QQuickPaintedItem(parent)
 {
-    setFlag(ItemHasContents, true);
-
-    setClip(true);
+    setAcceptHoverEvents(true);
 }
 
-QSGNode* WaveView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* updatePaintNodeData)
+WaveView::~WaveView()
 {
-    UNUSED(updatePaintNodeData);
+}
 
-    Wave wave = m_source.wave();
-    size_t count = wave.size();
+void WaveView::setClipKey(const ClipKey& newClipKey)
+{
+    m_clipKey = newClipKey;
+    emit clipKeyChanged();
 
-    QSGGeometryNode* node = nullptr;
-    QSGGeometry* geometry = nullptr;
+    update();
+}
 
-    if (!oldNode) {
-        node = new QSGGeometryNode;
-        geometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), int(count));
-        geometry->setLineWidth(1);
-        geometry->setDrawingMode(QSGGeometry::DrawLineStrip);
-        node->setGeometry(geometry);
-        node->setFlag(QSGNode::OwnsGeometry);
+void WaveView::paint(QPainter* painter)
+{
+    au3::IAu3WavePainter::Params params;
+    params.geometry.clipHeight = height();
+    params.geometry.clipWidth = width();
+    params.geometry.relClipLeft = m_clipLeft;
+    params.geometry.frameLeft = m_context->frameStartTime() * m_context->zoom();
+    params.geometry.frameWidth = (m_context->frameEndTime() - m_context->frameStartTime()) * m_context->zoom();
 
-        QSGFlatColorMaterial* material = new QSGFlatColorMaterial;
-        material->setColor(QColor("#707DE5"));
-        node->setMaterial(material);
-        node->setFlag(QSGNode::OwnsMaterial);
-    } else {
-        node = static_cast<QSGGeometryNode*>(oldNode);
-        geometry = node->geometry();
-        geometry->allocate(int(count));
+    params.zoom = m_context->zoom();
+
+    const WaveStyle& style = configuration()->waveStyle();
+
+    params.style.blankBrush = style.blankBrush;
+    params.style.samplePen = style.samplePen;
+    params.style.sampleBrush = style.sampleBrush;
+    params.style.rmsPen = style.rmsPen;
+    params.style.clippedPen = style.clippedPen;
+    params.style.highlight = style.highlight;
+
+    wavePainter()->paint(*painter, m_clipKey.key, params);
+}
+
+ClipKey WaveView::clipKey() const
+{
+    return m_clipKey;
+}
+
+TimelineContext* WaveView::timelineContext() const
+{
+    return m_context;
+}
+
+void WaveView::setTimelineContext(TimelineContext* newContext)
+{
+    if (m_context == newContext) {
+        return;
     }
 
-    QSGGeometry::Point2D* vertices = geometry->vertexDataAsPoint2D();
-
-    QSizeF sz = this->size();
-    float scaleY = sz.height() / (32767 * 2);
-    for (size_t i = 0; i < count; ++i) {
-        int16_t v = wave[i];
-        float x = i * 0.5;
-        float y = (v * scaleY + sz.height() / 2);
-
-        vertices[i].set(x, y);
+    if (m_context) {
+        disconnect(m_context, nullptr, this, nullptr);
     }
-    node->markDirty(QSGNode::DirtyGeometry);
 
-    return node;
+    m_context = newContext;
+
+    if (m_context) {
+        connect(m_context, &TimelineContext::frameTimeChanged, this, &WaveView::onFrameTimeChanged);
+    }
+
+    emit timelineContextChanged();
 }
 
-WaveSource WaveView::source() const
+void WaveView::onFrameTimeChanged()
 {
-    return m_source;
+    update();
 }
 
-void WaveView::setSource(const WaveSource& newSource)
+double WaveView::clipLeft() const
 {
-    m_source = newSource;
-    emit sourceChanged();
+    return m_clipLeft;
+}
+
+void WaveView::setClipLeft(double newClipLeft)
+{
+    if (qFuzzyCompare(m_clipLeft, newClipLeft)) {
+        return;
+    }
+    m_clipLeft = newClipLeft;
+    emit clipLeftChanged();
+
+    update();
 }
