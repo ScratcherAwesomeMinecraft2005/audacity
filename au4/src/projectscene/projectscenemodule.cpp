@@ -28,8 +28,10 @@
 #include "ui/iuiactionsregister.h"
 
 #include "internal/projectsceneuiactions.h"
-
 #include "internal/projectsceneconfiguration.h"
+#include "internal/projectviewstatecreator.h"
+
+#include "view/common/trackgeometrymodel.h"
 
 #include "view/toolbars/projecttoolbarmodel.h"
 #include "view/trackspanel/trackslistmodel.h"
@@ -38,6 +40,7 @@
 #include "view/clipsview/clipslistmodel.h"
 #include "view/clipsview/waveview.h"
 #include "view/clipsview/timelinecontext.h"
+#include "view/clipsview/timelineruler.h"
 
 using namespace au::projectscene;
 using namespace muse::modularity;
@@ -64,6 +67,7 @@ void ProjectSceneModule::registerExports()
     m_configuration = std::make_shared<ProjectSceneConfiguration>();
 
     ioc()->registerExport<IProjectSceneConfiguration>(moduleName(), m_configuration);
+    ioc()->registerExport<IProjectViewStateCreator>(moduleName(), new ProjectViewStateCreator());
 }
 
 void ProjectSceneModule::resolveImports()
@@ -80,6 +84,9 @@ void ProjectSceneModule::registerUiTypes()
     qmlRegisterUncreatableType<TrackTypes>("Audacity.ProjectScene", 1, 0, "TrackType", "Not creatable from QML");
     qmlRegisterUncreatableType<ClipKey>("Audacity.ProjectScene", 1, 0, "ClipKey", "Not creatable from QML");
 
+    // common
+    qmlRegisterType<TrackViewStateModel>("Audacity.ProjectScene", 1, 0, "TrackViewStateModel");
+
     // toolbars
     qmlRegisterType<ProjectToolBarModel>("Audacity.ProjectScene", 1, 0, "ProjectToolBarModel");
 
@@ -90,6 +97,7 @@ void ProjectSceneModule::registerUiTypes()
     qmlRegisterType<TracksListClipsModel>("Audacity.ProjectScene", 1, 0, "TracksListClipsModel");
     qmlRegisterType<ClipsListModel>("Audacity.ProjectScene", 1, 0, "ClipsListModel");
     qmlRegisterType<TimelineContext>("Audacity.ProjectScene", 1, 0, "TimelineContext");
+    qmlRegisterType<TimelineRuler>("Audacity.ProjectScene", 1, 0, "TimelineRuler");
     qmlRegisterType<WaveView>("Audacity.ProjectScene", 1, 0, "WaveView");
 }
 

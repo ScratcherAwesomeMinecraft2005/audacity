@@ -1,12 +1,14 @@
 /*
 * Audacity: A Digital Audio Editor
 */
-import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 
-import Muse.Ui 1.0
-import Muse.UiComponents 1.0
+import Muse.Ui
+import Muse.UiComponents
+
+import Audacity.ProjectScene
 
 import "audio"
 
@@ -26,7 +28,8 @@ ListItemBlank {
         }
     }
 
-    height: 144
+    height: trackViewState.trackHeight
+    clip: true
 
     onIsSelectedChanged: {
         if (isSelected && !navigation.active) {
@@ -38,6 +41,11 @@ ListItemBlank {
     signal deleteRequested()
 
     signal openEffectsRequested()
+
+    TrackViewStateModel {
+        id: trackViewState
+        trackId: root.item ? root.item.trackId : -1
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -176,6 +184,21 @@ ListItemBlank {
                 height: parent.height
                 currentVolumePressure: root.item.rightChannelPressure
             }
+        }
+    }
+
+    MouseArea {
+        id: dragArea
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: 4
+
+        cursorShape: Qt.SizeVerCursor
+
+        onPositionChanged: function(mouse) {
+            trackViewState.changeTrackHeight(mouse.y)
         }
     }
 

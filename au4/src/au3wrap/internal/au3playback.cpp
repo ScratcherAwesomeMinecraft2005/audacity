@@ -9,12 +9,14 @@
 #include "libraries/lib-stretching-sequence/StretchingSequence.h"
 #include "libraries/lib-audio-io/ProjectAudioIO.h"
 #include "libraries/lib-time-frequency-selection/ViewInfo.h"
+#include "libraries/lib-audio-devices/Meter.h"
 
 #include "libraries/lib-audio-io/AudioIO.h"
 
 #include "wxtypes_convert.h"
 
 #include "internal/au3audiooutput.h"
+#include "internal/au3audioinput.h"
 
 #include "log.h"
 
@@ -22,7 +24,7 @@ using namespace au::au3;
 
 void Au3Playback::init()
 {
-    m_audioOutputPtr = std::make_shared<Au3AudioOutput>();
+    m_audioOutput = std::make_shared<Au3AudioOutput>();
 }
 
 void Au3Playback::play()
@@ -215,6 +217,20 @@ void Au3Playback::stop()
 
     //Make sure you tell gAudioIO to unpause
     gAudioIO->SetPaused(false);
+
+    // So that we continue monitoring after playing or recording.
+    // also clean the MeterQueues
+    AudacityProject& project = projectRef();
+    auto& projectAudioIO = ProjectAudioIO::Get(project);
+    auto meter = projectAudioIO.GetPlaybackMeter();
+    if (meter) {
+        meter->Clear();
+    }
+
+    meter = projectAudioIO.GetCaptureMeter();
+    if (meter) {
+        meter->Clear();
+    }
 }
 
 void Au3Playback::pause()
@@ -273,7 +289,7 @@ muse::async::Channel<au::audio::PlaybackStatus> Au3Playback::playbackStatusChang
 
 IAu3AudioOutputPtr Au3Playback::audioOutput() const
 {
-    return m_audioOutputPtr;
+    return m_audioOutput;
 }
 
 AudacityProject& Au3Playback::projectRef() const
