@@ -348,25 +348,6 @@ bool ProjectFileManager::DoSave(const FilePath & fileName, const bool fromSaveAs
          return false;
       }
 
-      auto &tracks = TrackList::Get( proj );
-      if (tracks.empty())
-      {
-         if (UndoManager::Get( proj ).UnsavedChanges() &&
-               settings.EmptyCanBeDirty())
-         {
-            int result = AudacityMessageBox(
-               XO(
-   "Your project is now empty.\nIf saved, the project will have no tracks.\n\nTo save any previously open tracks:\nClick 'No', Edit > Undo until all tracks\nare open, then File > Save Project.\n\nSave anyway?"),
-               XO("Warning - Empty Project"),
-               wxYES_NO | wxICON_QUESTION,
-               &window);
-            if (result == wxNO)
-            {
-               return false;
-            }
-         }
-      }
-
       wxULongLong fileSize = wxFileName::GetSize(projectFileIO.GetFileName());
 
       wxDiskspaceSize_t freeSpace;
@@ -504,13 +485,6 @@ bool ProjectFileManager::SaveAs(bool allowOverwrite /* = false */)
 
    TranslatableString title = XO("%sSave Project \"%s\" As...")
       .Format( Restorer.sProjNumber, Restorer.sProjName );
-   TranslatableString message = XO("\
-'Save Project' is for an Audacity project, not an audio file.\n\
-For an audio file that will open in other apps, use 'Export'.\n");
-
-   if (ShowWarningDialog(&window, wxT("FirstProjectSave"), message, true) != wxID_OK) {
-      return false;
-   }
 
    bool bPrompt = (project.mBatchMode == 0) || (projectFileIO.GetFileName().empty());
    FilePath fName;
@@ -1362,16 +1336,18 @@ private:
 
 bool ProjectFileManager::Import(const FilePath& fileName, bool addToHistory)
 {
-   return Import(std::vector<FilePath> { fileName }, addToHistory);
+   wxArrayString fileNames;
+   fileNames.Add(fileName);
+   return Import(std::move(fileNames), addToHistory);
 }
 
-bool ProjectFileManager::ImportAndArrange(wxArrayString fileNames)
+bool ProjectFileManager::Import(wxArrayString fileNames, bool addToHistory)
 {
    fileNames.Sort(FileNames::CompareNoCase);
-   if (!ProjectFileManager::Get(mProject).Import(
-          std::vector<wxString> { fileNames.begin(), fileNames.end() }))
+   if (!ProjectFileManager::Get(mProject).ImportAndRunTempoDetection(
+          std::vector<wxString> { fileNames.begin(), fileNames.end() },
+          addToHistory))
       return false;
-   auto& viewPort = Viewport::Get(mProject);
    // Last track in the project is the one that was just added. Use it for
    // focus, selection, etc.
    Track* lastTrack = nullptr;
@@ -1380,12 +1356,19 @@ bool ProjectFileManager::ImportAndArrange(wxArrayString fileNames)
    if(range.empty())
       return false;
    lastTrack = *(range.rbegin());
-   TrackFocus::Get(mProject).Set(lastTrack, true);
-   viewPort.ZoomFitHorizontally();
-   viewPort.ShowTrack(*lastTrack);
-   viewPort.HandleResize(); // Adjust scrollers for NEW track sizes.
-   ViewInfo::Get(mProject).selectedRegion.setTimes(
-      lastTrack->GetStartTime(), lastTrack->GetEndTime());
+   BasicUI::CallAfter([wTrack = lastTrack->weak_from_this(), wProject = mProject.weak_from_this()] {
+      const auto project = wProject.lock();
+      const auto track = wTrack.lock();
+      if (!project || !track)
+         return;
+      auto& viewPort = Viewport::Get(*project);
+      TrackFocus::Get(*project).Set(track.get(), true);
+      viewPort.ZoomFitHorizontally();
+      viewPort.ShowTrack(*track);
+      viewPort.HandleResize(); // Adjust scrollers for NEW track sizes.
+      ViewInfo::Get(*project).selectedRegion.setTimes(
+         track->GetStartTime(), track->GetEndTime());
+   });
    return true;
 }
 
@@ -1427,7 +1410,7 @@ std::vector<std::shared_ptr<MIR::AnalyzedAudioClip>> RunTempoDetection(
 }
 } // namespace
 
-bool ProjectFileManager::Import(
+bool ProjectFileManager::ImportAndRunTempoDetection(
    const std::vector<FilePath>& fileNames, bool addToHistory)
 {
    const auto projectWasEmpty =
@@ -1436,7 +1419,7 @@ bool ProjectFileManager::Import(
    const auto success = std::all_of(
       fileNames.begin(), fileNames.end(), [&](const FilePath& fileName) {
          std::shared_ptr<ClipMirAudioReader> resultingReader;
-         const auto success = Import(fileName, addToHistory, resultingReader);
+         const auto success = DoImport(fileName, addToHistory, resultingReader);
          if (success && resultingReader)
             resultingReaders.push_back(std::move(resultingReader));
          return success;
@@ -1458,7 +1441,7 @@ bool ProjectFileManager::Import(
 }
 
 // If pNewTrackList is passed in non-NULL, it gets filled with the pointers to NEW tracks.
-bool ProjectFileManager::Import(
+bool ProjectFileManager::DoImport(
    const FilePath& fileName, bool addToHistory,
    std::shared_ptr<ClipMirAudioReader>& resultingReader)
 {

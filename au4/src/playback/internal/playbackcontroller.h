@@ -11,17 +11,17 @@
 #include "context/iglobalcontext.h"
 #include "iinteractive.h"
 
-#include "au3wrap/iau3playback.h"
-
+#include "../iplayback.h"
+#include "../iplayer.h"
 #include "../iplaybackcontroller.h"
 
 namespace au::playback {
 class PlaybackController : public IPlaybackController, public muse::actions::Actionable, public muse::async::Asyncable
 {
-    INJECT_STATIC(muse::actions::IActionsDispatcher, dispatcher)
-    INJECT_STATIC(au::context::IGlobalContext, globalContext)
-    INJECT_STATIC(muse::IInteractive, interactive)
-    INJECT_STATIC(au3::IAu3Playback, au3Playback)
+    muse::Inject<muse::actions::IActionsDispatcher> dispatcher;
+    muse::Inject<au::context::IGlobalContext> globalContext;
+    muse::Inject<muse::IInteractive> interactive;
+    muse::Inject<IPlayback> playback;
 
 public:
     void init();
@@ -33,7 +33,6 @@ public:
     bool isPlaying() const override;
     muse::async::Notification isPlayingChanged() const override;
 
-    void seek(const audio::msecs_t msecs) override;
     void reset() override;
 
     muse::async::Notification playbackPositionChanged() const override;
@@ -58,6 +57,9 @@ public:
     bool canReceiveAction(const muse::actions::ActionCode& code) const override;
 
 private:
+
+    IPlayerPtr player() const;
+
     bool isPaused() const;
     bool isLoaded() const;
 
@@ -71,16 +73,13 @@ private:
     void seekRangeSelection();
 
     void togglePlay();
-    void rewindToStart(const muse::actions::ActionData& args);
+    void rewindToStart();
+    void onSeekAction(const muse::actions::ActionData& args);
     void play();
     void pause();
     void stop();
     void resume();
-
-    audio::msecs_t playbackStartMsecs() const;
-    audio::msecs_t playbackEndMsecs() const;
-
-    void setCurrentPlaybackStatus(audio::PlaybackStatus status);
+    void seek(const audio::secs_t secs);
 
     void togglePlayRepeats();
     void toggleAutomaticallyPan();
@@ -110,7 +109,7 @@ private:
 
     using TrackAddFinished = std::function<void ()>;
 
-    audio::msecs_t tickToMsecs(int tick) const;
+    playback::IPlayerPtr m_player;
 
     muse::async::Notification m_isPlayAllowedChanged;
     muse::async::Notification m_isPlayingChanged;
@@ -121,7 +120,6 @@ private:
     muse::async::Channel<muse::actions::ActionCode> m_actionCheckedChanged;
 
     muse::async::Notification m_currentSequenceIdChanged;
-    audio::PlaybackStatus m_currentPlaybackStatus = audio::PlaybackStatus::Stopped;
     audio::msecs_t m_currentPlaybackTimeMsecs = 0;
 
     muse::async::Channel<audio::TrackId> m_trackAdded;

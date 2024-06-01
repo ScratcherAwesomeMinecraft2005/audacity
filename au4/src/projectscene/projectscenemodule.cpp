@@ -31,7 +31,7 @@
 #include "internal/projectsceneconfiguration.h"
 #include "internal/projectviewstatecreator.h"
 
-#include "view/common/trackgeometrymodel.h"
+#include "view/common/tracksviewstatemodel.h"
 
 #include "view/toolbars/projecttoolbarmodel.h"
 #include "view/trackspanel/trackslistmodel.h"
@@ -41,6 +41,8 @@
 #include "view/clipsview/waveview.h"
 #include "view/clipsview/timelinecontext.h"
 #include "view/clipsview/timelineruler.h"
+
+#include "view/playcursor/playcursormodel.h"
 
 using namespace au::projectscene;
 using namespace muse::modularity;
@@ -85,7 +87,7 @@ void ProjectSceneModule::registerUiTypes()
     qmlRegisterUncreatableType<ClipKey>("Audacity.ProjectScene", 1, 0, "ClipKey", "Not creatable from QML");
 
     // common
-    qmlRegisterType<TrackViewStateModel>("Audacity.ProjectScene", 1, 0, "TrackViewStateModel");
+    qmlRegisterType<TracksViewStateModel>("Audacity.ProjectScene", 1, 0, "TracksViewStateModel");
 
     // toolbars
     qmlRegisterType<ProjectToolBarModel>("Audacity.ProjectScene", 1, 0, "ProjectToolBarModel");
@@ -99,6 +101,9 @@ void ProjectSceneModule::registerUiTypes()
     qmlRegisterType<TimelineContext>("Audacity.ProjectScene", 1, 0, "TimelineContext");
     qmlRegisterType<TimelineRuler>("Audacity.ProjectScene", 1, 0, "TimelineRuler");
     qmlRegisterType<WaveView>("Audacity.ProjectScene", 1, 0, "WaveView");
+
+    // play cursor
+    qmlRegisterType<PlayCursorModel>("Audacity.ProjectScene", 1, 0, "PlayCursorModel");
 }
 
 void ProjectSceneModule::onInit(const muse::IApplication::RunMode& mode)
