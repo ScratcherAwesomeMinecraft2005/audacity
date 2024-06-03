@@ -6,7 +6,7 @@
 
 - [Lowered track refresh delay to 7 ms](https://github.com/somefoolouthere/audacity/blob/master/src/TrackPanel.h#L55)
   - Note: Requires playback at a high sample rate to work reliably.
-  - Warning: Will cause freezes when spectrogram view is used while moving the mouse to different panels during playback.
+  - Warning: Short freezes may occur when moving the mouse to different panels during playback, especially in spectrogram view.
 
 ## Tools
 
