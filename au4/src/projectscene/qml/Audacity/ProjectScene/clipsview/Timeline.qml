@@ -10,6 +10,8 @@ Rectangle {
 
     property alias context: timelineContext
 
+    signal clicked(var mouse)
+
     color: ui.theme.backgroundPrimaryColor
 
     //! NOTE This element must be the same width as the track wave visible area.
@@ -43,8 +45,13 @@ Rectangle {
 
     TimelineRuler {
         id: ruler
-        context: timelineContext
         anchors.fill: parent
+        context: timelineContext
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        onClicked: e => root.clicked(e)
     }
 
     SeparatorLine { anchors.bottom: parent.bottom }

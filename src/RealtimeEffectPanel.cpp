@@ -535,6 +535,8 @@ namespace
 
          SetSizer(vSizer.release());
 
+         SetInTabOrder(false);
+
 #if wxUSE_ACCESSIBILITY
          SetAccessible(safenew RealtimeEffectControlAx(this));
 #endif
@@ -1444,7 +1446,7 @@ void RealtimeEffectPanel::MakeTrackEffectPane()
    auto effectList = safenew ThemedWindowWrapper<RealtimeEffectListWindow>(mTrackEffectsPanel, wxID_ANY);
    effectList->SetBackgroundColorIndex(clrMedium);
    {
-      auto footer = safenew ThemedWindowWrapper<wxWindow>(effectList, wxID_ANY);
+      auto footer = safenew ThemedWindowWrapper<wxPanel>(effectList, wxID_ANY);
       footer->SetBackgroundColorIndex(clrMedium);
 
       auto addEffectHint = safenew ThemedWindowWrapper<wxStaticText>(footer, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE);
@@ -1455,12 +1457,6 @@ void RealtimeEffectPanel::MakeTrackEffectPane()
          footer, wxID_ANY, _("Watch video"),
          "https://www.audacityteam.org/realtime-video", wxDefaultPosition,
          wxDefaultSize, wxHL_ALIGN_LEFT | wxHL_CONTEXTMENU);
-
-      //i18n-hint: Hyperlink to the effects stack panel tutorial video
-      addEffectTutorialLink->SetTranslatableLabel(XO("Watch video"));
-#if wxUSE_ACCESSIBILITY
-      safenew WindowAccessible(addEffectTutorialLink);
-#endif
 
       addEffectTutorialLink->Bind(
          wxEVT_HYPERLINK, [](wxHyperlinkEvent& event)
@@ -1623,6 +1619,7 @@ void RealtimeEffectPanel::MakeMasterEffectPane()
          headerText->SetFont(wxFont(wxFontInfo().Bold()));
          headerText->SetTranslatableLabel(XO("Master Effects"));
          headerText->SetForegroundColorIndex(clrTrackPanelText);
+         header->SetName(headerText->GetLabel());
 
          auto desc = safenew ThemedWindowWrapper<wxStaticText>(header, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_END);
          desc->SetForegroundColorIndex(clrTrackPanelText);

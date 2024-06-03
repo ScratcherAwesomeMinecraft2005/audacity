@@ -24,7 +24,13 @@ Rectangle {
         }
     }
 
+    PlayCursorController {
+        id: playCursorController
+        context: timeline.context
+    }
+
     Component.onCompleted: {
+        playCursorController.init()
         tracksViewState.init()
         tracksModel.load()
     }
@@ -51,6 +57,21 @@ Rectangle {
             anchors.right: parent.right
 
             height: 76
+
+            onClicked: function (e) {
+                playCursorController.seekToX(e.x)
+            }
+        }
+
+        MouseArea {
+            anchors.top: timeline.bottom
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            onWheel: function(wheel) {
+                wheel.accepted = timeline.onWheel(wheel.angleDelta.y)
+            }
         }
 
         StyledListView {
@@ -85,23 +106,11 @@ Rectangle {
             }
         }
 
-        MouseArea {
-            anchors.fill: parent
-
-            onWheel: function(wheel) {
-                wheel.accepted = timeline.onWheel(wheel.angleDelta.y)
-            }
-
-            onClicked: function(mouse) {
-                playCursor.seekToX(mouse.x)
-            }
-        }
-
         PlayCursor {
             id: playCursor
             anchors.top: view.top
             anchors.bottom: parent.bottom
-            context: timeline.context
+            x: playCursorController.positionX
         }
     }
 }
