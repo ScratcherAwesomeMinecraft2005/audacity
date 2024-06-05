@@ -224,7 +224,7 @@ static const std::initializer_list<EnumValueSymbol> choicesZoom{
    { XO("MilliSeconds") },
    { XO("Samples") },
    { wxT("FourPixelsPerSample"), XO("4 Pixels per Sample") },
-   { wxT("144thSecond"), XO("1/144th Second") },
+   { wxT("144thSecond"), XO("144th Second") },
    { wxT("MaxZoom"), XO("Max Zoom") },
 };
 static auto enumChoicesZoom = {
