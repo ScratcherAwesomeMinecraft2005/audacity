@@ -61,6 +61,7 @@ namespace WaveChannelViewConstants
       kZoomMilliSeconds,
       kZoomSamples,
       kZoom4To1,
+      kZoom144th,
       kMaxZoom,
    };
 

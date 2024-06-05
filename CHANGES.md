@@ -12,7 +12,7 @@
 
 ### Zoom
 
-- [Samples zoom preset is changed to 1/144th of a second.](https://github.com/somefoolouthere/audacity/blob/master/src/menus/ViewMenus.cpp#104)
+- Added 1/144th Second zoom preset.
 
 ## Effects
 
