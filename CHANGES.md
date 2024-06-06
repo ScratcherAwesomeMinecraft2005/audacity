@@ -12,7 +12,7 @@
 
 ### Zoom
 
-- Added 1/144th Second zoom preset.
+- Added 144th Second zoom preset. It's intended to fit the view into a 144th of a second and be used as a high FPS visualizer during playback.
 
 ## Effects
 
