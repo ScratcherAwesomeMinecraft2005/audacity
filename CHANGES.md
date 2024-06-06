@@ -19,3 +19,9 @@
 ### Truncate Silence
 
 - [Adjusted minimum threshold to -145 dB and maximum threshold to -6 dB.](https://github.com/somefoolouthere/audacity/blob/master/src/effects/TruncSilence.h#126)
+
+## Other
+
+### Theming
+
+- Enabled theming features that can be found in a new tab in Preferences.
