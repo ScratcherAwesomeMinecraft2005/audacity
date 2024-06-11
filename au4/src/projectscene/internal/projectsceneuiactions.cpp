@@ -107,11 +107,31 @@ const UiActionList ProjectSceneUiActions::m_actions = {
              TranslatableString("action", "Pinned play head"),
              Checkable::Yes
              ),
+    // clip
+    UiAction("clip-properties",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Clip properties"),
+             TranslatableString("action", "Show clip properties")
+             ),
+    UiAction("clip-rename",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Rename clip"),
+             TranslatableString("action", "Rename clip")
+             ),
 };
 
 ProjectSceneUiActions::ProjectSceneUiActions(std::shared_ptr<ProjectSceneActionsController> controller)
     : m_controller(controller)
 {
+}
+
+void ProjectSceneUiActions::init()
+{
+    m_controller->actionCheckedChanged().onReceive(this, [this](const ActionCode& code) {
+        m_actionCheckedChanged.send({ code });
+    });
 }
 
 const UiActionList& ProjectSceneUiActions::actionsList() const
@@ -130,8 +150,7 @@ bool ProjectSceneUiActions::actionEnabled(const muse::ui::UiAction& act) const
 
 muse::async::Channel<ActionCodeList> ProjectSceneUiActions::actionEnabledChanged() const
 {
-    static async::Channel<ActionCodeList> ch;
-    return ch;
+    return m_actionEnabledChanged;
 }
 
 bool ProjectSceneUiActions::actionChecked(const muse::ui::UiAction& act) const
@@ -141,6 +160,5 @@ bool ProjectSceneUiActions::actionChecked(const muse::ui::UiAction& act) const
 
 muse::async::Channel<ActionCodeList> ProjectSceneUiActions::actionCheckedChanged() const
 {
-    static async::Channel<ActionCodeList> ch;
-    return ch;
+    return m_actionCheckedChanged;
 }

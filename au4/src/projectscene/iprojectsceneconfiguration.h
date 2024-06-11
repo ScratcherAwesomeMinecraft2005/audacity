@@ -1,7 +1,8 @@
 #pragma once
 
+#include "async/channel.h"
 #include "modularity/imoduleinterface.h"
-#include "types/wavestyle.h"
+#include "types/projectscenetypes.h"
 
 namespace au::projectscene {
 class IProjectSceneConfiguration : MODULE_EXPORT_INTERFACE
@@ -10,6 +11,8 @@ class IProjectSceneConfiguration : MODULE_EXPORT_INTERFACE
 public:
     virtual ~IProjectSceneConfiguration() = default;
 
-    virtual const WaveStyle& waveStyle() const = 0;
+    virtual bool isVerticalRulersVisible() const = 0;
+    virtual void setVerticalRulersVisible(bool visible) = 0;
+    virtual muse::async::Channel<bool> isVerticalRulersVisibleChanged() const = 0;
 };
 }

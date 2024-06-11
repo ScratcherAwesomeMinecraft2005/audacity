@@ -10,11 +10,11 @@
 
 #include "ui/iuiactionsregister.h"
 
+#include "internal/playbackconfiguration.h"
 #include "internal/playbackcontroller.h"
 #include "internal/playbackuiactions.h"
 
 #include "view/toolbars/playbacktoolbarmodel.h"
-#include "view/toolbars/playbacktoolbarabstractitem.h"
 #include "view/toolbars/playbacktoolbarcustomisemodel.h"
 #include "view/toolbars/playbacktoolbarcustomiseitem.h"
 
@@ -36,9 +36,11 @@ std::string PlaybackModule::moduleName() const
 
 void PlaybackModule::registerExports()
 {
+    m_configuration = std::make_shared<PlaybackConfiguration>();
     m_controller = std::make_shared<PlaybackController>();
     m_uiActions = std::make_shared<PlaybackUiActions>(m_controller);
 
+    ioc()->registerExport<PlaybackConfiguration>(moduleName(), m_configuration);
     ioc()->registerExport<IPlaybackController>(moduleName(), m_controller);
 }
 
@@ -59,7 +61,6 @@ void PlaybackModule::registerUiTypes()
 {
     // toolbars
     qmlRegisterType<PlaybackToolBarModel>("Audacity.Playback", 1, 0, "PlaybackToolBarModel");
-    qmlRegisterUncreatableType<PlaybackToolBarAbstractItem>("Muse.Ui", 1, 0, "PlaybackToolBarItem", "Cannot create an PlaybackToolBarItem");
     qmlRegisterType<PlaybackToolBarCustomiseModel>("Audacity.Playback", 1, 0, "PlaybackToolBarCustomiseModel");
     qmlRegisterUncreatableType<PlaybackToolBarCustomiseItem>("Audacity.Playback", 1, 0, "PlaybackToolBarCustomiseItem",
                                                              "Cannot create");

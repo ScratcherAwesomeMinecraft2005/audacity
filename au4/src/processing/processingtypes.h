@@ -6,11 +6,11 @@
 
 #include "global/realfn.h"
 #include "global/containers.h"
-#include "global/types/id.h"
+#include "global/types/number.h"
 
 namespace au::processing {
 using msecs_t = int64_t;
-using secs_t = int64_t;
+using secs_t = muse::number_t<double>;
 using samples_t = uint64_t;
 using sample_rate_t = uint64_t;
 using audioch_t = uint8_t;
@@ -25,6 +25,10 @@ struct ClipKey
 {
     TrackId trackId = -1;
     size_t index = muse::nidx;
+
+    ClipKey() = default;
+    ClipKey(const TrackId t, const size_t i)
+        : trackId(t), index(i) {}
 };
 
 struct AudioOutputParams {

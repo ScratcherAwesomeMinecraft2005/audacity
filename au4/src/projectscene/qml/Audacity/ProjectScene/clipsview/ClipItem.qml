@@ -2,60 +2,229 @@ import QtQuick
 
 import Muse.Ui
 import Muse.UiComponents
+import Muse.GraphicalEffects
 
 import Audacity.ProjectScene
 
-Rectangle {
+RoundedRectangle {
 
     id: root
 
     property alias context: waveView.context
-    property alias title: titleLabel.text
     property alias clipKey: waveView.clipKey
+    property alias title: titleLabel.text
+    property color clipColor: "#677CE4"
+    property bool clipSelected: false
+
+    property bool collapsed: false
 
     signal positionChanged(x : double)
+    signal requestSelected()
+
+    signal titleEditStarted()
+    signal titleEditAccepted(var newTitle)
+    signal titleEditCanceled()
 
     radius: 4
-    color: ui.theme.backgroundPrimaryColor
-    border.width: 1
-    border.color: ui.theme.strokeColor
-    clip: true
+    color: "#000000" // border color
 
-    Drag.active: dragArea.drag.active
+    Drag.active: headerDragArea.drag.active
 
-    Rectangle {
-        id: header
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: 20
+    property int borderWidth: 1
+    property bool hover: hoverArea.containsMouse || headerDragArea.containsMouse
 
-        color: ui.theme.backgroundSecondaryColor
+    function editTitle() {
+        titleEdit.edit(titleLabel.text)
+    }
 
-        StyledTextLabel {
-            id: titleLabel
-            anchors.fill: parent
-        }
+    ClipContextMenuModel {
+        id: contextMenuModel
+        clipKey: root.clipKey
+    }
 
-        MouseArea {
-            id: dragArea
-            anchors.fill: parent
+    ContextMenuLoader {
+        id: contextMenuLoader
 
-            cursorShape: Qt.OpenHandCursor
-            drag.target: root
-            drag.axis: Drag.XAxis
-
-            onReleased: root.positionChanged(root.x)
+        onHandleMenuItem: function(itemId) {
+            contextMenuModel.handleMenuItem(itemId)
         }
     }
 
-    WaveView {
-        id: waveView
-        anchors.top: header.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 1
-
-        clipLeft: root.x
+    Component.onCompleted: {
+        Qt.callLater(contextMenuModel.loadItems)
     }
+
+    MouseArea {
+        id: hoverArea
+        anchors.fill: parent
+        acceptedButtons: Qt.RightButton
+        hoverEnabled: root.collapsed
+        onClicked: function(e) {
+            contextMenuLoader.show(Qt.point(e.x, e.y), contextMenuModel.items)
+        }
+    }
+
+    Item {
+        id: inner
+
+        anchors.fill: parent
+        anchors.margins: root.borderWidth
+
+        layer.enabled: true
+        layer.effect: EffectOpacityMask {
+            maskSource: RoundedRectangle {
+                width: inner.width
+                height: inner.height
+                radius: root.radius
+            }
+        }
+
+        Rectangle {
+            id: header
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+
+            height: 20
+            z: 2
+
+            visible: !root.collapsed || root.hover
+
+            MouseArea {
+                id: headerDragArea
+                anchors.fill: parent
+
+                hoverEnabled: true
+                cursorShape: Qt.OpenHandCursor
+                drag.target: root
+                drag.axis: Drag.XAxis
+
+                onReleased: {
+                    if (drag.active) {
+                        root.positionChanged(root.x)
+                    }
+                }
+
+                onClicked: root.requestSelected()
+
+                onDoubleClicked: {
+                    root.editTitle()
+                }
+            }
+
+            StyledTextLabel {
+                id: titleLabel
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: menuBtn.left
+                anchors.leftMargin: 4
+                anchors.rightMargin: 8
+                horizontalAlignment: Qt.AlignLeft
+            }
+
+            TextInputField {
+                id: titleEdit
+
+                property string newTitle: ""
+
+                anchors.fill: titleLabel
+                background.color: header.color
+                background.border.width: 0
+                background.radius: 0
+                inputField.color: titleLabel.color
+                textSidePadding: 0
+                visible: false
+
+                onTextChanged: function(text) {
+                    titleEdit.newTitle = text
+                }
+
+                onAccepted: {
+                    titleEdit.visible = false
+                    root.titleEditAccepted(titleEdit.newTitle)
+                }
+
+                onEscapted: {
+                    titleEdit.visible = false
+                }
+
+                onFocusChanged: {
+                    if (!titleEdit.focus) {
+                        titleEdit.visible = false
+                    }
+                }
+
+                function edit(text) {
+                    root.titleEditStarted()
+                    titleEdit.currentText = text
+                    titleEdit.newTitle = text
+                    titleEdit.visible = true
+                    titleEdit.ensureActiveFocus()
+                }
+            }
+
+            MenuButton {
+                id: menuBtn
+                width: 16
+                height: 16
+                anchors.right: parent.right
+                anchors.rightMargin: 4
+                anchors.verticalCenter: parent.verticalCenter
+
+                menuModel: contextMenuModel
+
+                onHandleMenuItem: function(itemId) {
+                    contextMenuModel.handleMenuItem(itemId)
+                }
+            }
+        }
+
+        WaveView {
+            id: waveView
+            anchors.top: (!root.collapsed && header.visible) ? header.bottom : parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+
+            clipColor: root.clipColor
+            clipLeft: root.x
+            clipSelected: root.clipSelected
+        }
+    }
+
+    state: "NORMAL"
+    states: [
+        State {
+            name: "NORMAL"
+            when: !root.clipSelected && !headerDragArea.containsMouse
+            PropertyChanges { target: header; color: root.clipColor }
+            PropertyChanges { target: titleLabel; color: "#ffffff"}
+            PropertyChanges { target: menuBtn; iconColor: "#ffffff"}
+        },
+
+        State {
+            name: "SELECTED"
+            when: root.clipSelected && !headerDragArea.containsMouse
+            PropertyChanges { target: header; color: ui.blendColors("#ffffff", root.clipColor, 0.3) }
+            PropertyChanges { target: titleLabel; color: "#000000" }
+            PropertyChanges { target: menuBtn; iconColor: "#000000"}
+        },
+
+        State {
+            name: "NORMAL_HEADER_HOVERED"
+            when: !root.clipSelected && headerDragArea.containsMouse
+            PropertyChanges { target: header; color: ui.blendColors("#ffffff", root.clipColor, 0.8)}
+            PropertyChanges { target: titleLabel; color: "#ffffff"}
+            PropertyChanges { target: menuBtn; iconColor: "#ffffff"}
+        },
+
+        State {
+            name: "SELECTED_HEADER_HOVERED"
+            when: root.clipSelected && headerDragArea.containsMouse
+            PropertyChanges { target: header; color: ui.blendColors("#ffffff", root.clipColor, 0.2) }
+            PropertyChanges { target: titleLabel; color: "#000000"}
+            PropertyChanges { target: menuBtn; iconColor: "#000000"}
+        }
+    ]
 }

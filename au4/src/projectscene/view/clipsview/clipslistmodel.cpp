@@ -1,3 +1,6 @@
+/*
+* Audacity: A Digital Audio Editor
+*/
 #include "clipslistmodel.h"
 
 #include "types/projectscenetypes.h"
@@ -18,6 +21,8 @@ void ClipsListModel::load()
         return;
     }
 
+    dispatcher()->reg(this, "clip-rename", this, &ClipsListModel::onClipRenameAction);
+
     ProcessingProjectPtr prj = globalContext()->currentProcessingProject();
     if (!prj) {
         return;
@@ -27,6 +32,12 @@ void ClipsListModel::load()
         connect(m_context, &TimelineContext::zoomChanged, this, &ClipsListModel::onTimelineContextValuesChanged);
         connect(m_context, &TimelineContext::frameTimeChanged, this, &ClipsListModel::onTimelineContextValuesChanged);
     }
+
+    muse::ValCh<processing::ClipKey> selectedClip = processingInteraction()->selectedClip();
+    selectedClip.ch.onReceive(this, [this](const processing::ClipKey& k) {
+        onSelectedClip(k);
+    });
+    onSelectedClip(selectedClip.val);
 
     beginResetModel();
 
@@ -51,10 +62,11 @@ QHash<int, QByteArray> ClipsListModel::roleNames() const
 {
     static QHash<int, QByteArray> roles
     {
-        { ClipKeyRole, "clipKeyData" },
-        { ClipTitleRole, "clipTitleData" },
-        { ClipWidthRole, "clipWidthData" },
-        { ClipLeftRole, "clipLeftData" }
+        { ClipKeyRole, "clipKey" },
+        { ClipTitleRole, "clipTitle" },
+        { ClipColorRole, "clipColor" },
+        { ClipWidthRole, "clipWidth" },
+        { ClipLeftRole, "clipLeft" }
     };
     return roles;
 }
@@ -74,6 +86,8 @@ QVariant ClipsListModel::data(const QModelIndex& index, int role) const
     } break;
     case ClipTitleRole:
         return clip.title.toQString();
+    case ClipColorRole:
+        return clip.color.toQColor();
     case ClipWidthRole: {
         qint64 width = (clip.endTime - clip.startTime) * m_context->zoom();
         return width;
@@ -95,6 +109,9 @@ bool ClipsListModel::setData(const QModelIndex& index, const QVariant& value, in
     switch (role) {
     case ClipLeftRole: {
         return changeClipStartTime(index, value);
+    } break;
+    case ClipTitleRole: {
+        return changeClipTitle(index, value);
     } break;
     default:
         break;
@@ -123,24 +140,54 @@ bool ClipsListModel::changeClipStartTime(const QModelIndex& index, const QVarian
     return ok;
 }
 
-void ClipsListModel::onSelected(double x1, double x2)
+void ClipsListModel::onClipRenameAction(const muse::actions::ActionData& args)
 {
-    onSelectedTime(m_context->positionToTime(x1), m_context->positionToTime(x2));
-}
-
-void ClipsListModel::onSelectedTime(double startTime, double endTime)
-{
-    if (startTime > endTime) {
-        std::swap(startTime, endTime);
+    IF_ASSERT_FAILED(args.count() > 0) {
+        return;
     }
 
-    LOGDA() << "m_trackId: " << m_trackId << ", startTime: " << startTime << ", endTime: " << endTime;
-    NOT_IMPLEMENTED;
+    processing::ClipKey key = args.arg<processing::ClipKey>(0);
+
+    if (key.trackId != m_trackId) {
+        return;
+    }
+
+    IF_ASSERT_FAILED(key.index < m_clipList.size()) {
+        return;
+    }
+
+    emit requestClipTitleEdit(key.index);
 }
 
-void ClipsListModel::resetSelection()
+bool ClipsListModel::changeClipTitle(const QModelIndex& index, const QVariant& value)
 {
-    NOT_IMPLEMENTED;
+    au::processing::Clip& clip = m_clipList[index.row()];
+    muse::String newTitle = value.toString();
+    if (clip.title == newTitle) {
+        return false;
+    }
+
+    bool ok = processingInteraction()->changeClipTitle(clip.key, newTitle);
+    return ok;
+}
+
+void ClipsListModel::selectClip(int index)
+{
+    processingInteraction()->selectClip(processing::ClipKey(m_trackId, index));
+}
+
+void ClipsListModel::resetSelectedClip()
+{
+    processingInteraction()->selectClip(processing::ClipKey());
+}
+
+void ClipsListModel::onSelectedClip(const processing::ClipKey& k)
+{
+    if (m_trackId != k.trackId) {
+        setSelectedClipIdx(-1);
+    } else {
+        setSelectedClipIdx(k.index);
+    }
 }
 
 QVariant ClipsListModel::trackId() const
@@ -170,4 +217,18 @@ void ClipsListModel::setTimelineContext(TimelineContext* newContext)
     }
     m_context = newContext;
     emit timelineContextChanged();
+}
+
+int ClipsListModel::selectedClipIdx() const
+{
+    return m_selectedClipIdx;
+}
+
+void ClipsListModel::setSelectedClipIdx(int newSelectedClipIdx)
+{
+    if (m_selectedClipIdx == newSelectedClipIdx) {
+        return;
+    }
+    m_selectedClipIdx = newSelectedClipIdx;
+    emit selectedClipIdxChanged();
 }

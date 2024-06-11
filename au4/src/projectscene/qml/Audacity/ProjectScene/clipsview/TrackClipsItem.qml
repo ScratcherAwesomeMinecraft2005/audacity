@@ -11,14 +11,19 @@ Item {
     property alias trackId: clipsModel.trackId
     property alias context: clipsModel.context
 
+    property bool isDataSelected: false
+
     signal interactionStarted()
     signal interactionEnded()
 
     height: trackViewState.trackHeight
-    clip: true
 
     ClipsListModel {
         id: clipsModel
+
+        onRequestClipTitleEdit: function(index){
+            repeator.itemAt(index).editTitle()
+        }
     }
 
     TracksViewStateModel {
@@ -31,37 +36,62 @@ Item {
         clipsModel.load()
     }
 
-    Repeater {
-        model: clipsModel
+    Item {
+        anchors.fill: parent
+        anchors.bottomMargin: sep.height
 
-        delegate: ClipItem {
+        Repeater {
+            id: repeator
 
-            height: parent.height
-            width: model.clipWidthData
-            x: model.clipLeftData
+            model: clipsModel
 
-            title: model.clipTitleData
+            delegate: ClipItem {
 
-            context: root.context
-            clipKey: model.clipKeyData
+                height: parent.height
+                width: model.clipWidth
+                x: model.clipLeft
 
-            onPositionChanged: function(x) {
-                model.clipLeftData = x
+                context: root.context
+                title: model.clipTitle
+                clipColor: model.clipColor
+                clipKey: model.clipKey
+                clipSelected: clipsModel.selectedClipIdx === model.index
+                collapsed: trackViewState.isTrackCollapsed
+
+                onPositionChanged: function(x) {
+                    model.clipLeft = x
+                }
+
+                onRequestSelected: {
+                    clipsModel.selectClip(model.index)
+                }
+
+                onTitleEditStarted: {
+                    clipsModel.selectClip(model.index)
+                }
+
+                onTitleEditAccepted: function(newTitle) {
+                    model.clipTitle = newTitle
+                    clipsModel.resetSelectedClip()
+                }
+
+                onTitleEditCanceled: {
+                    clipsModel.resetSelectedClip()
+                }
             }
         }
     }
 
-    ClipsSelection {
-        id: clipsSelection
+    Rectangle {
+        id: selRect
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        color: "#8EC9FF"
+        opacity: 0.4
+        visible: root.isDataSelected
 
-        anchors.fill: parent
-        anchors.topMargin: 20 // clip header height
-
-        onSelected: function(x1, x2) {
-            clipsModel.onSelected(x1, x2)
-        }
-
-        onReset: clipsModel.resetSelection()
+        x: root.context.timeToPosition(root.context.selectionStartTime)
+        width: root.context.timeToPosition(root.context.selectionEndTime) - x
     }
 
     MouseArea {
@@ -88,5 +118,5 @@ Item {
         }
     }
 
-    SeparatorLine { anchors.bottom: parent.bottom }
+    SeparatorLine { id: sep; anchors.bottom: parent.bottom }
 }

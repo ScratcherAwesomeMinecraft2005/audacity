@@ -40,6 +40,9 @@
 #include "view/clipsview/trackslistclipsmodel.h"
 #include "view/clipsview/clipslistmodel.h"
 #include "view/clipsview/waveview.h"
+#include "view/clipsview/clipcontextmenumodel.h"
+#include "view/clipsview/selectionviewcontroller.h"
+
 #include "view/timeline/timelinecontext.h"
 #include "view/timeline/timelineruler.h"
 #include "view/timeline/timelinecontextmenumodel.h"
@@ -102,10 +105,14 @@ void ProjectSceneModule::registerUiTypes()
     // clips view
     qmlRegisterType<TracksListClipsModel>("Audacity.ProjectScene", 1, 0, "TracksListClipsModel");
     qmlRegisterType<ClipsListModel>("Audacity.ProjectScene", 1, 0, "ClipsListModel");
+    qmlRegisterType<WaveView>("Audacity.ProjectScene", 1, 0, "WaveView");
+    qmlRegisterType<ClipContextMenuModel>("Audacity.ProjectScene", 1, 0, "ClipContextMenuModel");
+    qmlRegisterType<SelectionViewController>("Audacity.ProjectScene", 1, 0, "SelectionViewController");
+
+    // timeline
     qmlRegisterType<TimelineContext>("Audacity.ProjectScene", 1, 0, "TimelineContext");
     qmlRegisterType<TimelineRuler>("Audacity.ProjectScene", 1, 0, "TimelineRuler");
     qmlRegisterType<TimelineContextMenuModel>("Audacity.ProjectScene", 1, 0, "TimelineContextMenuModel");
-    qmlRegisterType<WaveView>("Audacity.ProjectScene", 1, 0, "WaveView");
 
     // play cursor
     qmlRegisterType<PlayCursorController>("Audacity.ProjectScene", 1, 0, "PlayCursorController");
@@ -118,5 +125,6 @@ void ProjectSceneModule::onInit(const muse::IApplication::RunMode& mode)
     }
 
     m_configuration->init();
+    m_uiActions->init();
     m_projectSceneActionsController->init();
 }

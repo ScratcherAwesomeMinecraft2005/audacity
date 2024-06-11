@@ -1,3 +1,6 @@
+/*
+* Audacity: A Digital Audio Editor
+*/
 #pragma once
 
 #include "../iprojectsceneconfiguration.h"
@@ -16,10 +19,11 @@ public:
 
     void init();
 
-    const WaveStyle& waveStyle() const override;
+    bool isVerticalRulersVisible() const override;
+    void setVerticalRulersVisible(bool visible) override;
+    muse::async::Channel<bool> isVerticalRulersVisibleChanged() const override;
 
 private:
-
-    WaveStyle m_waveStyle;
+    muse::async::Channel<bool> m_isVerticalRulersVisibleChanged;
 };
 }

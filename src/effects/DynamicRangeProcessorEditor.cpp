@@ -1,8 +1,10 @@
 #include "DynamicRangeProcessorEditor.h"
 #include "AllThemeResources.h"
 #include "BasicUI.h"
+#include "CompressionMeterPanel.h"
 #include "CompressorProcessor.h"
 #include "DynamicRangeProcessorHistoryPanel.h"
+#include "DynamicRangeProcessorPanelCommon.h"
 #include "DynamicRangeProcessorTransferFunctionPanel.h"
 #include "EffectInterface.h"
 #include "ShuttleGui.h"
@@ -15,6 +17,10 @@
 #include <wx/sizer.h>
 #include <wx/slider.h>
 #include <wx/textctrl.h>
+
+#if wxUSE_ACCESSIBILITY
+#include "WindowAccessible.h"
+#endif
 
 namespace
 {
@@ -141,71 +147,10 @@ void DynamicRangeProcessorEditor::PopulateOrExchange(ShuttleGui& S)
    S.SetBorder(borderSize);
    S.AddSpace(0, borderSize);
 
-   const auto compressorSettings = GetCompressorSettings();
-   if (compressorSettings)
-   {
-      S.StartMultiColumn(2, wxEXPAND);
-      S.SetStretchyCol(0);
-      S.StartPanel();
-   }
-
-   using It = std::vector<ExtendedCompressorParameter>::iterator;
-   const auto addTextboxAndSliders = [&](
-                                        const TranslatableString& prompt,
-                                        const It& begin, const It& end) {
-      S.StartStatic(prompt);
-      S.StartMultiColumn(3, wxEXPAND);
-      {
-         S.SetStretchyCol(2);
-         std::for_each(begin, end, [&](ExtendedCompressorParameter& parameter) {
-            AddTextboxAndSlider(S, parameter);
-         });
-      }
-      S.EndMultiColumn();
-      S.EndStatic();
-   };
-
-   const auto firstSmoothingParameterIt =
-      std::find_if(mParameters.begin(), mParameters.end(), [](const auto& p) {
-         return p.category == ControllerCategory::TimeSmoothing;
-      });
-
-   addTextboxAndSliders(
-      XO("Compression curve"), mParameters.begin(), firstSmoothingParameterIt);
-   addTextboxAndSliders(
-      XO("Smoothing"), firstSmoothingParameterIt, mParameters.end());
-
-   if (compressorSettings)
-   {
-      S.EndPanel();
-      S.StartMultiColumn(3);
-      {
-         S.SetStretchyRow(1);
-
-         constexpr auto tfWidth = 200;
-
-         // Horizontal ruler row
-         S.AddSpace(borderSize, 0);
-         S.Prop(1)
-            .Position(wxALIGN_BOTTOM)
-            .MinSize({ tfWidth, rulerWidth })
-            .AddWindow(
-               MakeRulerPanel(mUIParent, wxHORIZONTAL, TFPanel::rangeDb));
-         S.AddSpace(rulerWidth, 0);
-
-         // Transfer function row
-         S.AddSpace(borderSize, 0);
-         S.Prop(1).Position(wxEXPAND).AddWindow(safenew TFPanel(
-            mUIParent, transferFunctionPanelId, *compressorSettings));
-         S.Prop(1).Position(wxEXPAND).AddWindow(
-            MakeRulerPanel(mUIParent, wxVERTICAL, TFPanel::rangeDb));
-      }
-      S.EndMultiColumn();
-      S.SetSizerProportion(0);
-
-      // Once more
-      S.EndMultiColumn();
-   }
+   if (const auto compressorSettings = GetCompressorSettings())
+      PopulateCompressorUpperHalf(S, *compressorSettings);
+   else
+      PopulateLimiterUpperHalf(S);
 
    if (!mIsRealtime)
       // Not a real-time effect editor, no need for a graph
@@ -240,32 +185,51 @@ void DynamicRangeProcessorEditor::PopulateOrExchange(ShuttleGui& S)
    S.StartHorizontalLay(wxALIGN_LEFT, 0);
    {
       S.AddSpace(borderSize, 0);
-      S.AddCheckBox(XO("I&nput"), settings.showInput)
-         ->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& evt) {
+      wxCheckBox* input = S.AddCheckBox(XO("I&nput"), settings.showInput);
+      input->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& evt) {
             OnCheckbox(
                evt.IsChecked(), GET_REF(showInput), &HistPanel::ShowInput);
          });
-      S.AddCheckBox(XO("O&utput"), settings.showOutput)
-         ->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& evt) {
+      /* i18n-hint: show input on a graph */
+      input->SetName(_("Show input"));
+
+      wxCheckBox* output = S.AddCheckBox(XO("O&utput"), settings.showOutput);
+      output->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& evt) {
             OnCheckbox(
                evt.IsChecked(), GET_REF(showOutput), &HistPanel::ShowOutput);
          });
+      /* i18n-hint: show output on a graph */
+      output->SetName(_("Show output"));
+
       /* i18n-hint: when smoothing leads the output level to be momentarily
        * over the target */
-      S.AddCheckBox(XO("O&vershoot"), settings.showOvershoot)
-         ->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& evt) {
+      wxCheckBox* overshoot = S.AddCheckBox(XO("O&vershoot"), settings.showOvershoot);
+      overshoot->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& evt) {
             OnCheckbox(
                evt.IsChecked(), GET_REF(showOvershoot),
                &HistPanel::ShowOvershoot);
          });
+      /* i18n-hint: show overshoot on a graph */
+      overshoot->SetName(_("Show overshoot"));
+
       /* i18n-hint: when smoothing leads the output level to be momentarily
        * under the target */
-      S.AddCheckBox(XO("Under&shoot"), settings.showUndershoot)
-         ->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& evt) {
+      wxCheckBox* undershoot = S.AddCheckBox(XO("Under&shoot"), settings.showUndershoot);
+      undershoot->Bind(wxEVT_CHECKBOX, [&](wxCommandEvent& evt) {
             OnCheckbox(
                evt.IsChecked(), GET_REF(showUndershoot),
                &HistPanel::ShowUndershoot);
          });
+      /* i18n-hint: show undershoot on a graph */
+      undershoot->SetName(_("Show undershoot"));
+
+#if wxUSE_ACCESSIBILITY
+      // so that name can be set on a standard control
+      safenew WindowAccessible(input);
+      safenew WindowAccessible(output);
+      safenew WindowAccessible(overshoot);
+      safenew WindowAccessible(undershoot);
+#endif
    }
    S.EndHorizontalLay();
 
@@ -290,6 +254,147 @@ void DynamicRangeProcessorEditor::PopulateOrExchange(ShuttleGui& S)
    S.EndMultiColumn();
 
    S.AddSpace(0, borderSize);
+}
+
+void DynamicRangeProcessorEditor::PopulateLimiterUpperHalf(ShuttleGui& S)
+{
+   if (mIsRealtime)
+   {
+      S.StartMultiColumn(3, wxEXPAND);
+      {
+         S.SetStretchyCol(0);
+
+         AddSliderPanel(S);
+         S.AddSpace(borderSize, 0);
+         AddCompressionMeterPanel(S);
+      }
+      S.EndMultiColumn();
+   }
+   else
+      AddSliderPanel(S);
+}
+
+void DynamicRangeProcessorEditor::PopulateCompressorUpperHalf(
+   ShuttleGui& S, const CompressorSettings& compressorSettings)
+{
+   if (mIsRealtime)
+   {
+      S.StartMultiColumn(4, wxEXPAND);
+      {
+         S.SetStretchyCol(0);
+
+         AddSliderPanel(S);
+         S.AddSpace(borderSize, 0);
+         AddCompressionMeterPanel(S);
+         AddCompressionCurvePanel(S, compressorSettings);
+      }
+      S.EndMultiColumn();
+   }
+   else
+   {
+      S.StartMultiColumn(2, wxEXPAND);
+      {
+         S.SetStretchyCol(0);
+         AddSliderPanel(S);
+         AddCompressionCurvePanel(S, compressorSettings);
+      }
+   }
+}
+
+void DynamicRangeProcessorEditor::AddCompressionCurvePanel(
+   ShuttleGui& S, const CompressorSettings& compressorSettings)
+{
+   S.StartMultiColumn(3);
+   {
+      S.SetStretchyRow(1);
+
+      constexpr auto tfWidth = 200;
+
+      // Horizontal ruler row
+      S.AddSpace(borderSize, 0);
+      S.Prop(1)
+         .Position(wxALIGN_BOTTOM)
+         .MinSize({ tfWidth, rulerWidth })
+         .AddWindow(MakeRulerPanel(mUIParent, wxHORIZONTAL, TFPanel::rangeDb));
+      S.AddSpace(rulerWidth, 0);
+
+      // Transfer function row
+      S.AddSpace(borderSize, 0);
+      S.Prop(1).Position(wxEXPAND).AddWindow(safenew TFPanel(
+         mUIParent, transferFunctionPanelId, compressorSettings));
+      S.Prop(1).Position(wxEXPAND).AddWindow(
+         MakeRulerPanel(mUIParent, wxVERTICAL, TFPanel::rangeDb));
+   }
+   S.EndMultiColumn();
+}
+
+void DynamicRangeProcessorEditor::AddSliderPanel(ShuttleGui& S)
+{
+   using It = std::vector<ExtendedCompressorParameter>::iterator;
+   const auto addTextboxAndSliders = [&](
+                                        const TranslatableString& prompt,
+                                        const It& begin, const It& end) {
+      S.StartStatic(prompt);
+      S.StartMultiColumn(3, wxEXPAND);
+      {
+         S.SetStretchyCol(2);
+         std::for_each(begin, end, [&](ExtendedCompressorParameter& parameter) {
+            AddTextboxAndSlider(S, parameter);
+         });
+      }
+      S.EndMultiColumn();
+      S.EndStatic();
+   };
+
+   const auto firstSmoothingParameterIt =
+      std::find_if(mParameters.begin(), mParameters.end(), [](const auto& p) {
+         return p.category == ControllerCategory::TimeSmoothing;
+      });
+
+   S.StartPanel();
+   {
+      addTextboxAndSliders(
+         XO("Compression curve"), mParameters.begin(),
+         firstSmoothingParameterIt);
+      addTextboxAndSliders(
+         XO("Smoothing"), firstSmoothingParameterIt, mParameters.end());
+   }
+   S.EndPanel();
+}
+
+void DynamicRangeProcessorEditor::AddCompressionMeterPanel(ShuttleGui& S)
+{
+   S.StartVerticalLay(0);
+   {
+      // Add vertical space above and below to align it with the slider
+      // static boxes.
+      S.AddSpace(0, 11);
+
+      S.SetSizerProportion(1);
+      S.StartMultiColumn(2, wxEXPAND);
+      {
+         S.SetStretchyCol(1);
+         S.SetStretchyRow(0);
+
+         constexpr auto height = 100;
+         S.Prop(1)
+            .Position(wxALIGN_LEFT | wxALIGN_TOP | wxEXPAND)
+            .MinSize({ 30, height })
+            .AddWindow(
+               safenew CompressionMeterPanel(mUIParent, mCompressorInstance));
+
+         S.Prop(1)
+            .Position(wxEXPAND | wxALIGN_TOP)
+            .MinSize({ 30, height })
+            .AddWindow(MakeRulerPanel(
+               mUIParent, wxVERTICAL,
+               DynamicRangeProcessorPanel::compressorMeterRangeDb));
+      }
+      S.EndMultiColumn();
+
+      S.AddSpace(0, 5);
+   }
+   S.EndVerticalLay();
 }
 
 void DynamicRangeProcessorEditor::AddTextboxAndSlider(

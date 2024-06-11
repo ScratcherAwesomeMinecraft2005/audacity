@@ -1,20 +1,35 @@
+/*
+* Audacity: A Digital Audio Editor
+*/
 #include "projectsceneconfiguration.h"
+
+#include "settings.h"
 
 using namespace au::projectscene;
 
+static const std::string moduleName("projectscene");
+
+static const muse::Settings::Key IS_VERTICAL_RULERS_VISIBLE(moduleName, "projectscene/verticalrulersEnabled");
+
 void ProjectSceneConfiguration::init()
 {
-    //! TODO We need to determine if there is a difference between light and dark themes.
-    //! We need to determine whether some colors will be taken from the theme
-    m_waveStyle.blankBrush = QColor("#262c30");
-    m_waveStyle.samplePen = QColor("#7386e5");
-    m_waveStyle.sampleBrush = QColor("#abb6ef");
-    m_waveStyle.rmsPen = QColor("#abb6ef");
-    m_waveStyle.clippedPen = QColor("#abb6ef");
-    m_waveStyle.highlight = QColor("#FF00FF");
+    muse::settings()->setDefaultValue(IS_VERTICAL_RULERS_VISIBLE, muse::Val(false));
+    muse::settings()->valueChanged(IS_VERTICAL_RULERS_VISIBLE).onReceive(nullptr, [this](const muse::Val& val) {
+        m_isVerticalRulersVisibleChanged.send(val.toBool());
+    });
 }
 
-const WaveStyle& ProjectSceneConfiguration::waveStyle() const
+bool ProjectSceneConfiguration::isVerticalRulersVisible() const
 {
-    return m_waveStyle;
+    return muse::settings()->value(IS_VERTICAL_RULERS_VISIBLE).toBool();
+}
+
+void ProjectSceneConfiguration::setVerticalRulersVisible(bool visible)
+{
+    muse::settings()->setSharedValue(IS_VERTICAL_RULERS_VISIBLE, muse::Val(visible));
+}
+
+muse::async::Channel<bool> ProjectSceneConfiguration::isVerticalRulersVisibleChanged() const
+{
+    return m_isVerticalRulersVisibleChanged;
 }
