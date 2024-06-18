@@ -9,6 +9,7 @@
 #include "async/asyncable.h"
 
 #include "timeformat.h"
+#include "beatsmeasuresformat.h"
 #include "timelinecontext.h"
 
 class QPainter;
@@ -39,6 +40,8 @@ public:
     explicit TimelineRuler(QQuickItem* parent = nullptr);
     ~TimelineRuler() = default;
 
+    void setFormatter(std::unique_ptr<IRulerFormat> formatter);
+
     void paint(QPainter* painter) override;
 
     TimelineContext* timelineContext() const;
@@ -48,12 +51,13 @@ signals:
     void timelineContextChanged();
 
 private:
-    void prepareTickData(Ticks& ticks, const TimeIntervalInfo& timeInterval, double w, double h);
+    Ticks prepareTickData(const IntervalInfo& timeInterval, double w, double h);
     void drawLabels(QPainter* painter, const Ticks& ticks, double w, double h);
     void drawTicks(QPainter* painter, const Ticks& ticks);
 
     void onFrameTimeChanged();
 
     TimelineContext* m_context = nullptr;
+    std::unique_ptr<IRulerFormat> m_formatter;
 };
 }

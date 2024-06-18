@@ -49,6 +49,8 @@ Paul Licameli split from WaveChannelView.cpp
 #include "waveform/WaveDataCache.h"
 #include "waveform/WavePaintParameters.h"
 
+#include <atomic>
+
 
 static WaveChannelSubView::Type sType{
    WaveChannelViewConstants::Waveform,
@@ -216,7 +218,8 @@ public:
 
    WaveformPainter& EnsureClip (const WaveClip& clip)
    {
-      if (&clip != mWaveClip)
+      const auto changed = mChanged.exchange(false);
+      if (&clip != mWaveClip || changed)
          mChannelCaches.clear();
 
       const auto nChannels = clip.NChannels();
@@ -284,11 +287,17 @@ public:
       }
    }
 
+   void SwapChannels() override
+   {
+      if(mChannelCaches.size() == 2)
+         std::swap(mChannelCaches[0], mChannelCaches[1]);
+   }
+
    void MarkChanged() noexcept override
    {
       //Triggered when any part of the waveform has changed
       //TODO: invalidate parts of the cache that intersect changes
-      mChannelCaches.clear();
+      mChanged.store(true);
    }
 
    void Invalidate() override
@@ -315,6 +324,7 @@ private:
    };
 
    std::vector<ChannelCaches> mChannelCaches;
+   std::atomic<bool> mChanged = false;
 };
 
 void DrawWaveform(
@@ -403,9 +413,10 @@ void DrawWaveformBackground(TrackPanelDrawingContext &context,
    const auto &blankBrush = artist->blankBrush;
    const auto &selectedBrush = artist->selectedBrush;
    const auto &unselectedBrush = artist->unselectedBrush;
+   const auto &envelopeBackgroundBrush = artist->envelopeBackgroundBrush;
 
    dc.SetPen(*wxTRANSPARENT_PEN);
-   dc.SetBrush(blankBrush);
+   dc.SetBrush(envelopeBackgroundBrush);
    dc.DrawRectangle(rect);
 
    // Bug 2389 - always draw at least one pixel of selection.

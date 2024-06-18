@@ -6,7 +6,7 @@
 
 #include "domaccessor.h"
 #include "domconverter.h"
-#include "../wxtypes_convert.h"
+#include "wxtypes_convert.h"
 
 #include "log.h"
 
@@ -59,14 +59,4 @@ bool ProcessingInteraction::changeClipTitle(const processing::ClipKey& clipKey, 
     prj->onClipChanged(DomConverter::clip(waveTrack, clip.get(), clipKey.index));
 
     return true;
-}
-
-muse::ValCh<au::processing::ClipKey> ProcessingInteraction::selectedClip() const
-{
-    return m_selectedClip;
-}
-
-void ProcessingInteraction::selectClip(const processing::ClipKey& clipKey)
-{
-    m_selectedClip.set(clipKey);
 }

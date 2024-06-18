@@ -8,6 +8,7 @@
 #include "modularity/ioc.h"
 #include "context/iglobalcontext.h"
 #include "processing/iprocessinginteraction.h"
+#include "processing/iselectioncontroller.h"
 #include "actions/iactionsdispatcher.h"
 #include "actions/actionable.h"
 
@@ -27,6 +28,7 @@ class ClipsListModel : public QAbstractListModel, public muse::async::Asyncable,
 
     muse::Inject<context::IGlobalContext> globalContext;
     muse::Inject<processing::IProcessingInteraction> processingInteraction;
+    muse::Inject<processing::ISelectionController> selectionController;
     muse::Inject<muse::actions::IActionsDispatcher> dispatcher;
 
 public:
@@ -39,7 +41,8 @@ public:
     int selectedClipIdx() const;
     void setSelectedClipIdx(int newSelectedClipIdx);
 
-    Q_INVOKABLE void load();
+    Q_INVOKABLE void init();
+    Q_INVOKABLE void reload();
     Q_INVOKABLE void selectClip(int index);
     Q_INVOKABLE void resetSelectedClip();
 
@@ -65,7 +68,9 @@ private:
         ClipTitleRole,
         ClipColorRole,
         ClipWidthRole,
-        ClipLeftRole
+        ClipLeftRole,
+        ClipMoveMaximumXRole,
+        ClipMoveMinimumXRole
     };
 
     bool changeClipStartTime(const QModelIndex& index, const QVariant& value);

@@ -189,4 +189,14 @@ DockPage {
     central: TracksClipsView {
         id: clipsView
     }
+
+    statusBar: DockStatusBar {
+        objectName: pageModel.statusBarName()
+
+        height: 40
+        minimumHeight: height
+        maximumHeight: height
+
+        ProjectStatusBar {}
+    }
 }

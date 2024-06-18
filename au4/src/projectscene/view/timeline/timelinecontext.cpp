@@ -20,21 +20,22 @@ void TimelineContext::init(double frameWidth)
     m_zoom = 2.0; //{ 44100.0 / 512.0 };
     emit zoomChanged();
 
+    m_BPM = 120;
+    emit BPMChanged();
+
     m_frameStartTime = 0.0;
     emit frameStartTimeChanged();
     m_frameEndTime = positionToTime(frameWidth);
     emit frameEndTimeChanged();
     emit frameTimeChanged();
 
-    muse::ValCh<processing::secs_t> selectedStartTime = processingSelectionController()->dataSelectedStartTime();
-    m_selecitonStartTime = selectedStartTime.val;
-    selectedStartTime.ch.onReceive(this, [this](processing::secs_t time) {
+    m_selecitonStartTime = selectionController()->dataSelectedStartTime();
+    selectionController()->dataSelectedStartTimeChanged().onReceive(this, [this](processing::secs_t time) {
         setSelectionStartTime(time);
     });
 
-    muse::ValCh<processing::secs_t> selectedEndTime = processingSelectionController()->dataSelectedEndTime();
-    m_selectionEndTime = selectedEndTime.val;
-    selectedEndTime.ch.onReceive(this, [this](processing::secs_t time) {
+    m_selectionEndTime = selectionController()->dataSelectedEndTime();
+    selectionController()->dataSelectedEndTimeChanged().onReceive(this, [this](processing::secs_t time) {
         setSelectionEndTime(time);
     });
 }
@@ -55,7 +56,7 @@ bool TimelineContext::onWheel(double y)
 
 void TimelineContext::changeZoom(int direction)
 {
-    double step = (muse::is_equal(m_zoom, 1.0) && direction < 0) ? 0.1 : 1.0;
+    double step = m_zoom * 0.04;
 
     double zoom = m_zoom + (step * direction);
     zoom = std::max(zoom, ZOOM_MIN);
@@ -89,7 +90,7 @@ void TimelineContext::shiftFrameTime(double shift)
 
 void TimelineContext::shiftFrameTimeOnStep(int direction)
 {
-    double step = 10.0;
+    double step = 30.0 / m_zoom;
     double shift = step * direction;
     shiftFrameTime(shift);
 }
@@ -123,6 +124,45 @@ void TimelineContext::setZoom(double zoom)
         m_zoom = zoom;
         emit zoomChanged();
         updateFrameTime();
+    }
+}
+
+int TimelineContext::BPM() const
+{
+    return m_BPM;
+}
+
+void TimelineContext::setBPM(int BPM)
+{
+    if (m_BPM != BPM) {
+        m_BPM = BPM;
+        emit BPMChanged();
+    }
+}
+
+int TimelineContext::timeSigUpper() const
+{
+    return m_timeSigUpper;
+}
+
+void TimelineContext::setTimeSigUpper(int timeSigUpper)
+{
+    if (m_timeSigUpper != timeSigUpper) {
+        m_timeSigUpper = timeSigUpper;
+        emit timeSigUpperChanged();
+    }
+}
+
+int TimelineContext::timeSigLower() const
+{
+    return m_timeSigLower;
+}
+
+void TimelineContext::setTimeSigLower(int timeSigLower)
+{
+    if (m_timeSigLower != timeSigLower) {
+        m_timeSigLower = timeSigLower;
+        emit timeSigLowerChanged();
     }
 }
 

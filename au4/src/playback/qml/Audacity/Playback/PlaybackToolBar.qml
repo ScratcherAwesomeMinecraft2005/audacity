@@ -10,6 +10,7 @@ import Audacity.Playback 1.0
 import Audacity.Record 1.0
 
 import "internal"
+import "components"
 
 Item {
     id: root
@@ -39,6 +40,7 @@ Item {
             switch(type) {
             case PlaybackToolBarModel.PLAYBACK_CONTROL: return controlComp
             case PlaybackToolBarModel.PLAYBACK_LEVEL: return playbackLevelComp
+            case PlaybackToolBarModel.PLAYBACK_TIME: return playbackTimeComp
             case PlaybackToolBarModel.RECORD_LEVEL: return recordLevelComp
             case PlaybackToolBarModel.PROJECT_CONTROL: return projectControlComp
             }
@@ -86,6 +88,39 @@ Item {
 
                 onVolumeLevelChangeRequested: function(level) {
                     itemData.level = level
+                }
+            }
+        }
+
+        Component {
+            id: playbackTimeComp
+
+            Timecode {
+                property var itemData: null
+
+                value: Boolean(itemData) ? itemData.currentValue : 0
+
+                sampleRate: Boolean(itemData) ? itemData.sampleRate : 0
+                tempo: Boolean(itemData) ? itemData.tempo : 0
+                upperTimeSignature: Boolean(itemData) ? itemData.upperTimeSignature : 0
+                lowerTimeSignature: Boolean(itemData) ? itemData.lowerTimeSignature : 0
+
+                currentFormat: Boolean(itemData) ? itemData.currentFormat : 0
+
+                onValueChangeRequested: function(newValue) {
+                    if (!Boolean(itemData)) {
+                        return
+                    }
+
+                    itemData.currentValue = newValue
+                }
+
+                onCurrentFormatChanged: {
+                    if (!Boolean(itemData)) {
+                        return
+                    }
+
+                    itemData.currentFormat = currentFormat
                 }
             }
         }
