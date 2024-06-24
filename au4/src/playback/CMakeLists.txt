@@ -15,6 +15,7 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/iplayback.h
     ${CMAKE_CURRENT_LIST_DIR}/iplayer.h
     ${CMAKE_CURRENT_LIST_DIR}/iaudiooutput.h
+    ${CMAKE_CURRENT_LIST_DIR}/iaudiodevicesprovider.h
     ${CMAKE_CURRENT_LIST_DIR}/iplaybackcontroller.h
     ${CMAKE_CURRENT_LIST_DIR}/iplaybackconfiguration.h
 
@@ -26,6 +27,9 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/playbackuiactions.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/playbackuiactions.h
 
+    ${CMAKE_CURRENT_LIST_DIR}/view/common/playbackstatemodel.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/common/playbackstatemodel.h
+
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbarmodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbarmodel.h
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbarlevelitem.cpp
@@ -35,6 +39,7 @@ set(MODULE_SRC
 
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbartimeitem.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbartimeitem.h
+
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/timecode/timecodemodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/timecode/timecodemodel.h
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/timecode/timecodeformatter.cpp
@@ -44,6 +49,9 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/timecode/beatsformatter.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/timecode/beatsformatter.h
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/timecode/types.h
+
+    ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbartimesignatureitem.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbartimesignatureitem.h
 
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbarcustomisemodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/toolbars/playbacktoolbarcustomisemodel.h
