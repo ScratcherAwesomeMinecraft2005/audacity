@@ -3,8 +3,6 @@
 */
 #include "clipslistmodel.h"
 
-#include "global/containers.h"
-
 #include "types/projectscenetypes.h"
 
 #include "log.h"
@@ -28,11 +26,6 @@ void ClipsListModel::init()
 
     dispatcher()->reg(this, "clip-rename", this, &ClipsListModel::onClipRenameAction);
 
-    if (m_context) {
-        connect(m_context, &TimelineContext::zoomChanged, this, &ClipsListModel::onTimelineContextValuesChanged);
-        connect(m_context, &TimelineContext::frameTimeChanged, this, &ClipsListModel::onTimelineContextValuesChanged);
-    }
-
     onSelectedClip(selectionController()->selectedClip());
     selectionController()->clipSelected().onReceive(this, [this](const processing::ClipKey& k) {
         onSelectedClip(k);
@@ -48,41 +41,46 @@ void ClipsListModel::reload()
         return;
     }
 
-    beginResetModel();
-
-    m_clipList = prj->clipList(m_trackId);
+    m_allClipList = prj->clipList(m_trackId);
 
     //! NOTE Clips in the track may not be in order (relative to startTime), here we arrange them.
     //! Accordingly, the indexes will change, we need to keep this in mind.
     //! To identify clips, clips have a key.
-    std::sort(m_clipList.begin(), m_clipList.end(), [](const Clip& c1, const Clip& c2) {
+    std::sort(m_allClipList.begin(), m_allClipList.end(), [](const Clip& c1, const Clip& c2) {
         return c1.startTime < c2.startTime;
     });
 
-    m_clipList.onItemChanged(this, [this](const Clip& clip) {
-        for (size_t i = 0; i < m_clipList.size(); ++i) {
-            if (m_clipList.at(i).key != clip.key) {
+    m_allClipList.onItemChanged(this, [this](const Clip& clip) {
+        for (size_t i = 0; i < m_allClipList.size(); ++i) {
+            if (m_allClipList.at(i).key != clip.key) {
                 continue;
             }
-            m_clipList[i] = clip;
+            m_allClipList[i] = clip;
 
-            // update current (all roles)
-            QModelIndex idx = this->index(i);
-            emit dataChanged(idx, idx);
-
-            // update prev
-            if (i > 0) {
-                QModelIndex prev = this->index(i - 1);
-                emit dataChanged(prev, prev, { ClipMoveMaximumXRole, ClipMoveMinimumXRole });
-            }
-
-            // update next
-            if (i < (m_clipList.size() - 1)) {
-                QModelIndex next = this->index(i + 1);
-                emit dataChanged(next, next, { ClipMoveMaximumXRole, ClipMoveMinimumXRole });
-            }
+            update();
         }
     });
+
+    update();
+}
+
+void ClipsListModel::update()
+{
+    beginResetModel();
+
+    m_clipList.clear();
+
+    for (const au::processing::Clip& c : m_allClipList) {
+        if (c.endTime < m_context->frameStartTime()) {
+            continue;
+        }
+
+        if (c.startTime > m_context->frameEndTime()) {
+            continue;
+        }
+
+        m_clipList.push_back(c);
+    }
 
     endResetModel();
 }
@@ -169,9 +167,6 @@ bool ClipsListModel::setData(const QModelIndex& index, const QVariant& value, in
     case ClipLeftRole: {
         return changeClipStartTime(index, value);
     } break;
-    case ClipTitleRole: {
-        return changeClipTitle(index, value);
-    } break;
     default:
         break;
     }
@@ -180,14 +175,7 @@ bool ClipsListModel::setData(const QModelIndex& index, const QVariant& value, in
 
 void ClipsListModel::onTimelineContextValuesChanged()
 {
-    // LOGDA() << "zoom: " << m_context->zoom()
-    //         << " frameStartTime: " << m_context->frameStartTime()
-    //         << " frameEndTime: " << m_context->frameEndTime();
-
-    for (size_t i = 0; i < m_clipList.size(); ++i) {
-        QModelIndex idx = this->index(int(i));
-        emit dataChanged(idx, idx, { ClipWidthRole, ClipLeftRole, ClipMoveMaximumXRole, ClipMoveMinimumXRole });
-    }
+    update();
 }
 
 bool ClipsListModel::changeClipStartTime(const QModelIndex& index, const QVariant& value)
@@ -219,10 +207,9 @@ void ClipsListModel::onClipRenameAction(const muse::actions::ActionData& args)
     emit requestClipTitleEdit(key.index);
 }
 
-bool ClipsListModel::changeClipTitle(const QModelIndex& index, const QVariant& value)
+bool ClipsListModel::changeClipTitle(int index, const QString& newTitle)
 {
-    au::processing::Clip& clip = m_clipList[index.row()];
-    muse::String newTitle = value.toString();
+    const au::processing::Clip& clip = m_clipList.at(index);
     if (clip.title == newTitle) {
         return false;
     }
@@ -275,7 +262,18 @@ void ClipsListModel::setTimelineContext(TimelineContext* newContext)
     if (m_context == newContext) {
         return;
     }
+
+    if (m_context) {
+        disconnect(m_context, nullptr, this, nullptr);
+    }
+
     m_context = newContext;
+
+    if (m_context) {
+        connect(m_context, &TimelineContext::zoomChanged, this, &ClipsListModel::onTimelineContextValuesChanged);
+        connect(m_context, &TimelineContext::frameTimeChanged, this, &ClipsListModel::onTimelineContextValuesChanged);
+    }
+
     emit timelineContextChanged();
 }
 

@@ -46,6 +46,8 @@ public:
     Q_INVOKABLE void selectClip(int index);
     Q_INVOKABLE void resetSelectedClip();
 
+    Q_INVOKABLE bool changeClipTitle(int index, const QString& newTitle);
+
     int rowCount(const QModelIndex& parent) const override;
     QHash<int, QByteArray> roleNames() const override;
     QVariant data(const QModelIndex& index, int role) const override;
@@ -73,8 +75,9 @@ private:
         ClipMoveMinimumXRole
     };
 
+    void update();
+
     bool changeClipStartTime(const QModelIndex& index, const QVariant& value);
-    bool changeClipTitle(const QModelIndex& index, const QVariant& value);
 
     void onSelectedClip(const processing::ClipKey& k);
 
@@ -82,7 +85,8 @@ private:
 
     TimelineContext* m_context = nullptr;
     processing::TrackId m_trackId = -1;
-    muse::async::NotifyList<au::processing::Clip> m_clipList;
+    muse::async::NotifyList<au::processing::Clip> m_allClipList;
+    std::vector<au::processing::Clip> m_clipList;
     int m_selectedClipIdx = -1;
 };
 }
