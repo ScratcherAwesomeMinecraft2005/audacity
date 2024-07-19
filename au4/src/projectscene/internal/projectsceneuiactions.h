@@ -14,7 +14,7 @@
 namespace au::projectscene {
 class ProjectSceneUiActions : public muse::ui::IUiActionsModule, public muse::async::Asyncable
 {
-    muse::Inject<mu::context::IUiContextResolver> uicontextResolver;
+    muse::Inject<context::IUiContextResolver> uicontextResolver;
     muse::Inject<IProjectSceneConfiguration> configuration;
 
 public:
@@ -29,6 +29,8 @@ public:
 
     bool actionChecked(const muse::ui::UiAction& act) const override;
     muse::async::Channel<muse::actions::ActionCodeList> actionCheckedChanged() const override;
+
+    static const muse::ui::ToolConfig& defaultPlaybackToolBarConfig();
 
 private:
     std::shared_ptr<ProjectSceneActionsController> m_controller;

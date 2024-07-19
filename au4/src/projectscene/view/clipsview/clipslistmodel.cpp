@@ -58,6 +58,36 @@ void ClipsListModel::reload()
             m_allClipList[i] = clip;
 
             update();
+
+            break;
+        }
+    });
+
+    m_allClipList.onItemAdded(this, [this](const Clip& clip) {
+        ProcessingProjectPtr prj = globalContext()->currentProcessingProject();
+        muse::async::NotifyList<au::processing::Clip> newList = prj->clipList(m_trackId);
+        for (size_t i = 0; i < newList.size(); ++i) {
+            if (newList.at(i).key != clip.key) {
+                continue;
+            }
+
+            m_allClipList.insert(m_allClipList.begin() + i, clip);
+
+            positionViewAtClip(clip);
+
+            update();
+
+            break;
+        }
+    });
+
+    m_allClipList.onItemRemoved(this, [this](const Clip& clip) {
+        for (auto it = m_allClipList.begin(); it != m_allClipList.end(); ++it) {
+            if (it->key == clip.key) {
+                m_allClipList.erase(it);
+                update();
+                break;
+            }
         }
     });
 
@@ -83,6 +113,20 @@ void ClipsListModel::update()
     }
 
     endResetModel();
+}
+
+void ClipsListModel::positionViewAtClip(const Clip& clip)
+{
+    double frameStartTime = m_context->frameStartTime();
+    double frameEndTime = m_context->frameEndTime();
+
+    if (frameStartTime < clip.startTime && frameEndTime > clip.startTime) {
+        return;
+    }
+
+    double OFFSET = (frameEndTime - frameStartTime) / 4.0;
+
+    m_context->moveToFrameTime(clip.startTime - OFFSET);
 }
 
 int ClipsListModel::rowCount(const QModelIndex&) const
@@ -220,7 +264,7 @@ bool ClipsListModel::changeClipTitle(int index, const QString& newTitle)
 
 void ClipsListModel::selectClip(int index)
 {
-    selectionController()->setSelectedClip(processing::ClipKey(m_trackId, index));
+    selectionController()->setSelectedClip(m_clipList.at(index).key);
 }
 
 void ClipsListModel::resetSelectedClip()

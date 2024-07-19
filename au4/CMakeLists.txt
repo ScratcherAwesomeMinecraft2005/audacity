@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   muse_framework
   GIT_REPOSITORY https://github.com/musescore/framework_tmp.git
-  GIT_TAG        u0621
+  GIT_TAG        u0717_2
 )
 
 FetchContent_GetProperties(muse_framework)
@@ -172,7 +172,7 @@ set(AU4_BUILD_MODE "dev" CACHE STRING "Build mode")
 set(AU4_REVISION "" CACHE STRING "Build revision")
 
 set(MUSE_ENABLE_UNIT_TESTS ON)
-set(MUSE_MODULE_ACCESSIBILITY OFF)
+set(MUSE_MODULE_ACCESSIBILITY ON)
 set(MUSE_MODULE_ACTIONS ON)
 set(MUSE_MODULE_AUDIO OFF)
 set(MUSE_MODULE_AUTOBOT OFF)
@@ -191,7 +191,7 @@ set(MUSE_MODULE_MPE OFF)
 set(MUSE_MODULE_MULTIINSTANCES OFF)
 set(MUSE_MODULE_MUSESAMPLER OFF)
 set(MUSE_MODULE_NETWORK ON)
-set(MUSE_MODULE_SHORTCUTS OFF)
+set(MUSE_MODULE_SHORTCUTS ON)
 set(MUSE_MODULE_UI ON)
 set(MUSE_MODULE_UI_TESTS OFF)
 set(MUSE_MODULE_UPDATE OFF)

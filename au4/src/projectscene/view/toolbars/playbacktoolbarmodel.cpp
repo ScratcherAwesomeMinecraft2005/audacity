@@ -3,20 +3,22 @@
 */
 #include "playbacktoolbarmodel.h"
 
-#include "internal/playbackuiactions.h"
+#include "internal/projectsceneuiactions.h"
 
-#include "view/toolbars/playbacktoolbarlevelitem.h"
-#include "view/toolbars/playbacktoolbarcontrolitem.h"
-#include "view/toolbars/playbacktoolbartimeitem.h"
-#include "view/toolbars/playbacktoolbarbpmitem.h"
-#include "view/toolbars/playbacktoolbartimesignatureitem.h"
+#include "playback/view/toolbars/playbacktoolbarlevelitem.h"
+#include "playback/view/toolbars/playbacktoolbarcontrolitem.h"
+#include "playback/view/toolbars/playbacktoolbartimeitem.h"
+#include "playback/view/toolbars/playbacktoolbarbpmitem.h"
+#include "playback/view/toolbars/playbacktoolbartimesignatureitem.h"
 #include "record/view/toolbars/playbacktoolbarrecordlevelitem.h"
+#include "projectscene/view/toolbars/snaptoolbaritem.h"
 
 #include "containers.h"
 
 using namespace muse::uicomponents;
 using namespace muse::ui;
 using namespace muse::actions;
+using namespace au::projectscene;
 using namespace au::playback;
 
 static const QString TOOLBAR_NAME("playbackToolBar");
@@ -42,6 +44,8 @@ static const ActionCode PLAYBACK_BPM("playback-bpm");
 static const ActionCode PLAYBACK_TIME_SIGNATURE("playback-time-signature");
 static const ActionCode RECORD_LEVEL("record-level");
 
+static const ActionCode SNAP_ACTION_CODE("snap");
+
 static PlaybackToolBarModel::ItemType itemType(const ActionCode& actionCode)
 {
     std::map<ActionCode, PlaybackToolBarModel::ItemType> types = {
@@ -56,6 +60,7 @@ static PlaybackToolBarModel::ItemType itemType(const ActionCode& actionCode)
         { REWIND_START_ACTION_CODE, PlaybackToolBarModel::PLAYBACK_CONTROL },
         { REWIND_END_ACTION_CODE, PlaybackToolBarModel::PLAYBACK_CONTROL },
         { LOOP_ACTION_CODE, PlaybackToolBarModel::PLAYBACK_CONTROL },
+        { SNAP_ACTION_CODE, PlaybackToolBarModel::SNAP }
     };
 
     return muse::value(types, actionCode, PlaybackToolBarModel::PROJECT_CONTROL);
@@ -69,20 +74,28 @@ PlaybackToolBarModel::PlaybackToolBarModel(QObject* parent)
 void PlaybackToolBarModel::load()
 {
     uiConfiguration()->toolConfigChanged(TOOLBAR_NAME).onNotify(this, [this]() {
-        load();
+        reload();
     });
 
     uiConfiguration()->currentThemeChanged().onNotify(this, [this]() {
-        load();
+        reload();
     });
 
     context()->currentProjectChanged().onNotify(this, [this]() {
-        onProjectChanged();
+        reload();
+
+        emit isEnabledChanged();
     });
 
     updateActions();
 
     AbstractToolBarModel::load();
+}
+
+void PlaybackToolBarModel::reload()
+{
+    load();
+    updateStates();
 }
 
 void PlaybackToolBarModel::onActionsStateChanges(const muse::actions::ActionCodeList& codes)
@@ -105,6 +118,14 @@ void PlaybackToolBarModel::onActionsStateChanges(const muse::actions::ActionCode
     }
 
     AbstractToolBarModel::onActionsStateChanges(codes);
+}
+
+void PlaybackToolBarModel::updateStates()
+{
+    updatePlayState();
+    updateStopState();
+    updateRecordState();
+    updateLoopState();
 }
 
 void PlaybackToolBarModel::updatePlayState()
@@ -192,11 +213,6 @@ void PlaybackToolBarModel::updateLoopState()
     item->setBackgroundColor(backgroundColor);
 }
 
-void PlaybackToolBarModel::onProjectChanged()
-{
-    updateActions();
-}
-
 void PlaybackToolBarModel::updateActions()
 {
     ToolBarItemList items;
@@ -204,7 +220,7 @@ void PlaybackToolBarModel::updateActions()
     beginResetModel();
 
     muse::ui::ToolConfig playbackConfig
-        = uiConfiguration()->toolConfig(TOOLBAR_NAME, PlaybackUiActions::defaultPlaybackToolConfig());
+        = uiConfiguration()->toolConfig(TOOLBAR_NAME, ProjectSceneUiActions::defaultPlaybackToolBarConfig());
 
     for (const muse::ui::ToolConfig::Item& citem : playbackConfig.items) {
         if (!citem.show) {
@@ -275,6 +291,9 @@ ToolBarItem* PlaybackToolBarModel::makeLocalItem(const ActionCode& actionCode)
         result = std::move(item);
         break;
     }
+    case PlaybackToolBarModel::SNAP:
+        result = new projectscene::SnapToolBarItem(action, static_cast<ToolBarItemType::Type>(type), this);
+        break;
     default:
         break;
     }
@@ -284,4 +303,9 @@ ToolBarItem* PlaybackToolBarModel::makeLocalItem(const ActionCode& actionCode)
     }
 
     return result;
+}
+
+bool PlaybackToolBarModel::isEnabled() const
+{
+    return context()->currentProject() != nullptr;
 }

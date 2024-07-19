@@ -8,9 +8,9 @@ import Muse.UiComponents 1.0
 
 import Audacity.Playback 1.0
 import Audacity.Record 1.0
+import Audacity.ProjectScene 1.0
 
 import "internal"
-import "components"
 
 Item {
     id: root
@@ -43,6 +43,7 @@ Item {
             case PlaybackToolBarModel.PLAYBACK_TIME_SIGNATURE: return playbackTimeSignatureComp
             case PlaybackToolBarModel.RECORD_LEVEL: return recordLevelComp
             case PlaybackToolBarModel.PROJECT_CONTROL: return projectControlComp
+            case PlaybackToolBarModel.SNAP: return snapComp
             }
 
             return null
@@ -83,8 +84,7 @@ Item {
                 leftCurrentVolumePressure: Boolean(itemData) ? itemData.leftChannelPressure : 0
                 rightCurrentVolumePressure: Boolean(itemData) ? itemData.rightChannelPressure : 0
 
-                navigationPanel: root.navigationPanel
-                navigationOrder: 2
+                enabled: Boolean(itemData) ? itemData.enabled : false
 
                 onVolumeLevelChangeRequested: function(level) {
                     itemData.level = level
@@ -106,6 +106,8 @@ Item {
                 lowerTimeSignature: Boolean(itemData) ? itemData.lowerTimeSignature : 0
 
                 currentFormat: Boolean(itemData) ? itemData.currentFormat : 0
+
+                enabled: Boolean(itemData) ? itemData.enabled : false
 
                 onValueChangeRequested: function(newValue) {
                     if (!Boolean(itemData)) {
@@ -133,6 +135,8 @@ Item {
 
                 value: Boolean(itemData) ? itemData.currentValue : 0
 
+                enabled: Boolean(itemData) ? itemData.enabled : false
+
                 onValueChangeRequested: function(newValue) {
                     if (!Boolean(itemData)) {
                         return
@@ -151,6 +155,8 @@ Item {
 
                 upper: Boolean(itemData) ? itemData.upper : 0
                 lower: Boolean(itemData) ? itemData.lower : 0
+
+                enabled: Boolean(itemData) ? itemData.enabled : false
 
                 onUpperChangeRequested: function(newValue) {
                     if (!Boolean(itemData)) {
@@ -188,11 +194,35 @@ Item {
                 leftCurrentVolumePressure: Boolean(itemData) ? itemData.leftChannelPressure : 0
                 rightCurrentVolumePressure: Boolean(itemData) ? itemData.rightChannelPressure : 0
 
-                navigationPanel: root.navigationPanel
-                navigationOrder: 1
+                enabled: Boolean(itemData) ? itemData.enabled : false
 
                 onVolumeLevelChangeRequested: function(level) {
                     itemData.level = level
+                }
+            }
+        }
+
+        Component {
+            id: snapComp
+
+            Snap {
+                property var itemData: null
+
+                width: 207
+                height: 28
+
+                isSnapEnabled: Boolean(itemData) ? itemData.isSnapEnabled : false
+                currentSnapMode: Boolean(itemData) ? itemData.currentValue : ""
+                contextMenuModel: Boolean(itemData) ? itemData.availableSnapTypes : null
+
+                enabled: Boolean(itemData) ? itemData.enabled : false
+
+                onSnapEnableChangeRequested: function(enabled) {
+                    itemData.isSnapEnabled = enabled
+                }
+
+                onHandleMenuItem: function(itemId) {
+                    itemData.handleMenuItem(itemId)
                 }
             }
         }
@@ -210,12 +240,14 @@ Item {
 
         icon: IconCode.SETTINGS_COG
         iconFont: ui.theme.toolbarIconsFont
-        toolTipTitle: qsTrc("playback", "Customize toolbar")
-        toolTipDescription: qsTrc("playback", "Show/hide toolbar buttons")
+        toolTipTitle: qsTrc("projectscene", "Customize toolbar")
+        toolTipDescription: qsTrc("projectscene", "Show/hide toolbar buttons")
+
+        enabled: view.model.isEnabled
 
         navigation.panel: root.navigationPanel
         navigation.order: 100
-        navigation.accessible.name: qsTrc("playback", "Customize toolbar")
+        navigation.accessible.name: qsTrc("projectscene", "Customize toolbar")
 
         onClicked: {
             customizePopup.toggleOpened()

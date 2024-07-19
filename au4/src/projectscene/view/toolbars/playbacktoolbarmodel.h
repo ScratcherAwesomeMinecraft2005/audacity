@@ -1,8 +1,7 @@
 /*
 * Audacity: A Digital Audio Editor
 */
-#ifndef AU_PROJECTSCENE_PLAYBACKTOOLBARMODEL_H
-#define AU_PROJECTSCENE_PLAYBACKTOOLBARMODEL_H
+#pragma once
 
 #include "modularity/ioc.h"
 #include "context/iglobalcontext.h"
@@ -15,18 +14,20 @@
 
 #include "uicomponents/view/abstracttoolbarmodel.h"
 
-namespace au::playback {
+namespace au::projectscene {
 class PlaybackToolBarModel : public muse::uicomponents::AbstractToolBarModel
 {
     Q_OBJECT
 
+    Q_PROPERTY(bool isEnabled READ isEnabled NOTIFY isEnabledChanged)
+
     muse::Inject<muse::ui::IUiConfiguration> uiConfiguration;
     muse::Inject<muse::ui::IUiActionsRegister> uiActionsRegister;
-    muse::Inject<au::context::IGlobalContext> context;
-    muse::Inject<au::playback::IPlaybackConfiguration> configuration;
-    muse::Inject<au::playback::IPlaybackController> controller;
-    muse::Inject<au::record::IRecordController> recordController;
-    muse::Inject<au::record::IRecordConfiguration> recordConfiguration;
+    muse::Inject<context::IGlobalContext> context;
+    muse::Inject<playback::IPlaybackConfiguration> configuration;
+    muse::Inject<playback::IPlaybackController> controller;
+    muse::Inject<record::IRecordController> recordController;
+    muse::Inject<record::IRecordConfiguration> recordConfiguration;
 
 public:
     explicit PlaybackToolBarModel(QObject* parent = nullptr);
@@ -40,27 +41,33 @@ public:
         PLAYBACK_BPM,
         PLAYBACK_TIME_SIGNATURE,
         PLAYBACK_CONTROL,
-        PROJECT_CONTROL
+        PROJECT_CONTROL,
+        SNAP
     };
     Q_ENUM(ItemType)
 
     Q_INVOKABLE void load() override;
 
+    bool isEnabled() const;
+
+signals:
+    void isEnabledChanged();
+
 private:
+    void reload();
 
     void onActionsStateChanges(const muse::actions::ActionCodeList& codes) override;
+
+    void updateStates();
     void updatePlayState();
     void updateStopState();
     void updateRecordState();
     void updateLoopState();
 
     void setupConnections();
-    void onProjectChanged();
 
     void updateActions();
 
     muse::uicomponents::ToolBarItem* makeLocalItem(const muse::actions::ActionCode& actionCode);
 };
 }
-
-#endif // AU_PROJECTSCENE_PLAYBACKTOOLBARMODEL_H

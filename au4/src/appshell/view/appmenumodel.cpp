@@ -177,7 +177,7 @@ MenuItem* AppMenuModel::makeEditMenu()
         makeMenuItem("cut"),
         makeMenuItem("copy"),
         makeMenuItem("paste"),
-        makeMenuItem("delete"),
+        makeMenuItem("clip-delete-selected"),
         makeSeparator(),
         makeMenuItem("cut-and-close-gap"),
         makeMenuItem("duplicate"),
@@ -432,6 +432,8 @@ MenuItem* AppMenuModel::makeHelpMenu()
         makeMenuItem("updates"),
         makeMenuItem("about-audacity"),
         makeMenuItem("about-qt", MenuItemRole::AboutQtRole),
+        makeSeparator(),
+        makeMenuItem("revert-factory")
     };
 
     //! TODO AU4

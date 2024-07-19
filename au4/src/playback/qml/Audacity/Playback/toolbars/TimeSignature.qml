@@ -8,6 +8,9 @@ import QtQuick.Layouts
 import Muse.Ui
 import Muse.UiComponents
 
+import "../components"
+import "internal"
+
 RowLayout {
     id: root
 
@@ -48,7 +51,7 @@ RowLayout {
                 spacing: 6
 
                 StyledTextLabel {
-                    id: lowerLabel
+                    id: upperLabel
 
                     anchors.verticalCenter: parent.verticalCenter
 
@@ -66,7 +69,7 @@ RowLayout {
                 }
 
                 StyledTextLabel {
-                    id: upperLabel
+                    id: lowerLabel
 
                     anchors.verticalCenter: parent.verticalCenter
 
