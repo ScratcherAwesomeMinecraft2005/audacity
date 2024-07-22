@@ -40,9 +40,18 @@ Rectangle {
     }
 
     Component.onCompleted: {
+        //! NOTE Models depend on geometry, so let's create a page first and then initialize the models
+        Qt.callLater(root.init)
+    }
+
+    function init() {
+        timeline.init()
         playCursorController.init()
         tracksViewState.init()
-        tracksModel.load()
+        //! NOTE Loading tracks, or rather clips, is the most havy operation.
+        // Let's make sure that everything is loaded and initialized before this,
+        // to avoid double loading at the beginning, when some parameters are initialized.
+        Qt.callLater(tracksModel.load)
     }
 
     Rectangle {
@@ -75,6 +84,18 @@ Rectangle {
         anchors.fill: parent
         anchors.leftMargin: 12
 
+        Rectangle {
+            id: lineCursor
+
+            y: parent.top
+            z: timeline.z + 1
+
+            height: timeline.height
+            width: 1
+
+            color: ui.theme.fontPrimaryColor
+        }
+
         Timeline {
             id: timeline
 
@@ -85,8 +106,18 @@ Rectangle {
             height: 77
             z: 2
 
-            onClicked: function (e) {
-                playCursorController.seekToX(e.x)
+            MouseArea {
+                id: timelineMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+
+                onPositionChanged: function(e) {
+                    lineCursor.x = e.x
+                }
+
+                onClicked: function (e) {
+                    playCursorController.seekToX(e.x)
+                }
             }
         }
 
@@ -126,10 +157,14 @@ Rectangle {
                 timeline.onWheel(wheelEvent.pixelDelta, wheelEvent.angleDelta)
             }
 
-            onPressed: e => selectionController.onPressed(e.x, e.y)
+            onPressed: function(e) {
+                playCursorController.seekToX(e.x)
+                selectionController.onPressed(e.x, e.y)
+            }
             onPositionChanged: function(e) {
                 mouseOnTracks = e.y < view.visibleContentHeight
                 selectionController.onPositionChanged(e.x, e.y)
+                lineCursor.x = e.x
             }
             onReleased: e => selectionController.onReleased(e.x, e.y)
         }
