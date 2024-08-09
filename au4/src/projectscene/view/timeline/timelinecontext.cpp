@@ -34,16 +34,16 @@ void TimelineContext::init(double frameWidth)
     emit frameTimeChanged();
 
     m_selecitonStartTime = selectionController()->dataSelectedStartTime();
-    selectionController()->dataSelectedStartTimeChanged().onReceive(this, [this](processing::secs_t time) {
+    selectionController()->dataSelectedStartTimeChanged().onReceive(this, [this](trackedit::secs_t time) {
         setSelectionStartTime(time);
     });
 
     m_selectionEndTime = selectionController()->dataSelectedEndTime();
-    selectionController()->dataSelectedEndTimeChanged().onReceive(this, [this](processing::secs_t time) {
+    selectionController()->dataSelectedEndTimeChanged().onReceive(this, [this](trackedit::secs_t time) {
         setSelectionEndTime(time);
     });
 
-    globalContext()->currentProcessingProjectChanged().onNotify(this, [this](){
+    globalContext()->currentTrackeditProjectChanged().onNotify(this, [this](){
         onProjectChanged();
     });
 
@@ -136,8 +136,14 @@ void TimelineContext::shiftFrameTime(double shift)
     }
 
     // do not shift to negative time values
-    if (m_frameStartTime + shift < 0) {
-        return;
+    if (m_frameStartTime + shift < 0.0) {
+        if (muse::is_equal(m_frameStartTime, 0.0)) {
+            return;
+        }
+        //! NOTE If we haven't reached the limit yet, then it shifts as much as possible
+        else {
+            shift = 0.0 - m_frameStartTime;
+        }
     }
     setFrameStartTime(m_frameStartTime + shift);
     setFrameEndTime(m_frameEndTime + shift);
@@ -153,12 +159,12 @@ IProjectViewStatePtr TimelineContext::viewState() const
 
 void TimelineContext::onProjectChanged()
 {
-    auto project = globalContext()->currentProcessingProject();
+    auto project = globalContext()->currentTrackeditProject();
     if (!project) {
         return;
     }
 
-    project->timeSignatureChanged().onReceive(this, [this](const processing::TimeSignature&) {
+    project->timeSignatureChanged().onReceive(this, [this](const trackedit::TimeSignature&) {
         updateTimeSignature();
     });
 
@@ -330,12 +336,12 @@ void TimelineContext::updateSelectionActive()
 
 void TimelineContext::updateTimeSignature()
 {
-    auto project = globalContext()->currentProcessingProject();
+    auto project = globalContext()->currentTrackeditProject();
     if (!project) {
         return;
     }
 
-    processing::TimeSignature timeSignature = project->timeSignature();
+    trackedit::TimeSignature timeSignature = project->timeSignature();
 
     m_timeSigUpper = timeSignature.upper;
     emit timeSigUpperChanged();

@@ -8,9 +8,9 @@
 
 #include "async/asyncable.h"
 
-#include "processing/processingtypes.h"
+#include "trackedit/trackedittypes.h"
 #include "playback/audiotypes.h"
-#include "processing/dom/track.h"
+#include "trackedit/dom/track.h"
 
 namespace au::projectscene {
 class TrackItem : public QObject, public muse::async::Asyncable
@@ -21,6 +21,7 @@ class TrackItem : public QObject, public muse::async::Asyncable
 
     Q_PROPERTY(QVariant trackId READ trackId_property CONSTANT)
     Q_PROPERTY(QString title READ title NOTIFY titleChanged)
+    Q_PROPERTY(int channelCount READ channelCount CONSTANT)
 
     Q_PROPERTY(float leftChannelPressure READ leftChannelPressure NOTIFY leftChannelPressureChanged)
     Q_PROPERTY(float rightChannelPressure READ rightChannelPressure NOTIFY rightChannelPressureChanged)
@@ -38,11 +39,12 @@ public:
 
     ~TrackItem() override;
 
-    void init(const processing::Track& track);
+    void init(const trackedit::Track& track);
 
-    processing::TrackId trackId() const;
+    trackedit::TrackId trackId() const;
     QVariant trackId_property() const;
     QString title() const;
+    int channelCount() const;
 
     float leftChannelPressure() const;
     float rightChannelPressure() const;
@@ -100,7 +102,7 @@ signals:
     void isSelectedChanged();
 
 protected:
-    void setAudioChannelVolumePressure(const processing::audioch_t chNum, const float newValue);
+    void setAudioChannelVolumePressure(const trackedit::audioch_t chNum, const float newValue);
     void resetAudioChannelsVolumePressure();
 
     void applyMuteToOutputParams(const bool isMuted);
@@ -111,7 +113,8 @@ protected:
     // muse::audio::AudioSignalChanges m_audioSignalChanges;
     audio::AudioOutputParams m_outParams;
 
-    processing::TrackId m_trackId = -1;
+    trackedit::TrackId m_trackId = -1;
+    trackedit::TrackType m_trackType = trackedit::TrackType::Undefined;
     QString m_title;
     bool m_outputOnly = false;
 

@@ -60,6 +60,11 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/trackslistclipsmodel.h
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/waveview.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/waveview.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/iwavepainter.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/au3/au3wavepainter.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/au3/au3wavepainter.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/au3/WaveformScale.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/au3/WaveformScale.h
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/selectionviewcontroller.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/clipsview/selectionviewcontroller.h
 
@@ -81,6 +86,8 @@ set(MODULE_SRC
 
     ${CMAKE_CURRENT_LIST_DIR}/view/playcursor/playcursorcontroller.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/playcursor/playcursorcontroller.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/playcursor/playpositionactioncontroller.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/playcursor/playpositionactioncontroller.h
 
     ${CMAKE_CURRENT_LIST_DIR}/view/statusbar/selectionstatusmodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/statusbar/selectionstatusmodel.h
@@ -88,7 +95,7 @@ set(MODULE_SRC
 
 set(MODULE_QML_IMPORT ${CMAKE_CURRENT_LIST_DIR}/qml )
 
-set(MODULE_LINK processing)
+set(MODULE_LINK trackedit)
 
 set(MODULE_INCLUDE
     ${CLIPSVIEW_V1_INC}

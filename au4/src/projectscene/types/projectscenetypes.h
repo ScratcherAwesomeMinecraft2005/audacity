@@ -4,9 +4,10 @@
 #ifndef AU_PROJECTSCENE_TRACKTYPES_H
 #define AU_PROJECTSCENE_TRACKTYPES_H
 
-#include "qobjectdefs.h"
+#include <qobjectdefs.h>
 
-#include "processing/processingtypes.h"
+#include "global/types/number.h"
+#include "trackedit/trackedittypes.h"
 
 namespace au::projectscene {
 class TrackTypes
@@ -14,7 +15,7 @@ class TrackTypes
     Q_GADGET
 
 public:
-    //! NOTE: must be in sync with au::processing::TrackType
+    //! NOTE: must be in sync with au::trackedit::TrackType
     enum class Type {
         UNDEFINED = 0,
         MONO,
@@ -31,10 +32,33 @@ class ClipKey
 public:
 
     ClipKey() = default;
-    ClipKey(const processing::ClipKey& k)
+    ClipKey(const trackedit::ClipKey& k)
         : key(k) {}
 
-    processing::ClipKey key;
+    trackedit::ClipKey key;
+};
+
+class ClipTime
+{
+    Q_GADGET
+
+public:
+
+    double clipStartTime = 0.0;
+    double clipEndTime = 0.0;
+
+    double itemStartTime = 0.0;
+    double itemEndTime = 0.0;
+
+    inline bool operator==(const ClipTime& other) const
+    {
+        return muse::is_equal(clipStartTime, other.clipStartTime)
+               && muse::is_equal(clipEndTime, other.clipEndTime)
+               && muse::is_equal(itemStartTime, other.itemStartTime)
+               && muse::is_equal(itemEndTime, other.itemEndTime);
+    }
+
+    inline bool operator!=(const ClipTime& other) const { return !this->operator==(other); }
 };
 
 class VerticalRulerTypes

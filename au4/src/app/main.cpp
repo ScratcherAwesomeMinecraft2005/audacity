@@ -29,6 +29,7 @@
 #include "log.h"
 
 // Framework
+#include "diagnostics/diagnosticsmodule.h"
 #include "framework/draw/drawmodule.h"
 #include "framework/actions/actionsmodule.h"
 #include "framework/ui/uimodule.h"
@@ -51,8 +52,9 @@
 #include "project/projectmodule.h"
 #include "projectscene/projectscenemodule.h"
 #include "playback/playbackmodule.h"
-#include "processing/processingmodule.h"
+#include "trackedit/trackeditmodule.h"
 #include "record/recordmodule.h"
+#include "effects/effectsmodule.h"
 
 #include "au3wrap/au3wrapmodule.h"
 
@@ -100,7 +102,7 @@ int main(int argc, char** argv)
 
 //! NOTE `diagnostics` must be first, because it installs the crash handler.
 //! For other modules, the order is (an should be) unimportant.
-//app.addModule(new muse::diagnostics::DiagnosticsModule());
+    app.addModule(new muse::diagnostics::DiagnosticsModule());
 
 // framework
     app.addModule(new muse::draw::DrawModule());
@@ -124,8 +126,9 @@ int main(int argc, char** argv)
     app.addModule(new au::projectscene::ProjectSceneModule());
     app.addModule(new au::au3::Au3WrapModule());
     app.addModule(new au::playback::PlaybackModule());
-    app.addModule(new au::processing::ProcessingModule());
+    app.addModule(new au::trackedit::TrackeditModule());
     app.addModule(new au::record::RecordModule());
+    app.addModule(new au::effects::EffectsModule());
 
 #if (defined (_MSCVER) || defined (_MSC_VER))
     // On MSVC under Windows, we need to manually retrieve the command-line arguments and convert them from UTF-16 to UTF-8.

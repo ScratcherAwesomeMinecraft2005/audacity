@@ -12,24 +12,30 @@ Rectangle {
 
     property alias context: waveView.context
     property alias clipKey: waveView.clipKey
+    property alias clipTime: waveView.clipTime
     property alias title: titleLabel.text
     property color clipColor: "#677CE4"
     property bool clipSelected: false
 
-    property real dragMaximumX: 100000
-    property real dragMinimumX: -100000
+    property real leftVisibleMargin: 0
+    property real rightVisibleMargin: 0
 
     property bool collapsed: false
 
-    signal positionChanged(x : double)
+    signal clipMoved(real deltaX, bool completed)
     signal requestSelected()
 
     signal titleEditStarted()
     signal titleEditAccepted(var newTitle)
     signal titleEditCanceled()
 
+    // mouse position event is not propagated on overlapping mouse areas
+    // so we are handling it manually
+    signal clipItemMousePositionChanged(real x, real y)
+
     radius: 4
-    color: "#000000" // border color
+    color: clipSelected ? "white" : clipColor
+    border.color: "#000000"
 
     property int borderWidth: 1
     property bool hover: hoverArea.containsMouse || headerDragArea.containsMouse
@@ -63,9 +69,14 @@ Rectangle {
         id: hoverArea
         anchors.fill: parent
         acceptedButtons: Qt.RightButton
-        hoverEnabled: root.collapsed
+        hoverEnabled: true
+
         onClicked: function(e) {
             contextMenuLoader.show(Qt.point(e.x, e.y), contextMenuModel.items)
+        }
+
+        onPositionChanged: {
+            clipItemMousePositionChanged(mouseX, mouseY)
         }
     }
 
@@ -73,17 +84,16 @@ Rectangle {
         id: inner
 
         anchors.fill: parent
-        anchors.margins: root.borderWidth
+        anchors.margins: 1
 
-        //! NOTE On Linux it often results in a black square
-        // layer.enabled: true
-        // layer.effect: EffectOpacityMask {
-        //     maskSource: RoundedRectangle {
-        //         width: inner.width
-        //         height: inner.height
-        //         radius: root.radius
-        //     }
-        // }
+        layer.enabled: true
+        layer.effect: EffectOpacityMask {
+            maskSource: RoundedRectangle {
+                width: inner.width
+                height: inner.height
+                radius: root.radius
+            }
+        }
 
         Rectangle {
             id: header
@@ -102,22 +112,34 @@ Rectangle {
 
                 hoverEnabled: true
                 cursorShape: Qt.OpenHandCursor
-                drag.target: root
-                drag.axis: Drag.XAxis
-                drag.maximumX: root.dragMaximumX
-                drag.minimumX: root.dragMinimumX
 
-                onReleased: {
-                    if (drag.active) {
-                        root.positionChanged(root.x)
+                property bool moveActive: false
+                property int moveLastX: 0
+
+                onPositionChanged: function(e) {
+                    root.clipItemMousePositionChanged(e.x, e.y)
+
+                    if (headerDragArea.moveActive) {
+                        var gx = mapToGlobal(e.x, e.y).x
+                        root.clipMoved(gx - headerDragArea.moveLastX, false)
+                        headerDragArea.moveLastX = gx
                     }
                 }
 
-                onClicked: root.requestSelected()
+                onPressed: function(e) {
+                    root.requestSelected()
 
-                onDoubleClicked: {
-                    root.editTitle()
+                    headerDragArea.moveLastX = mapToGlobal(e.x, e.y).x
+                    headerDragArea.moveActive = true
                 }
+
+                onReleased: function(e) {
+                    var gx = mapToGlobal(e.x, e.y).x
+                    root.clipMoved(gx - headerDragArea.moveLastX, true)
+                    headerDragArea.moveActive = false
+                }
+
+                onDoubleClicked: root.editTitle()
             }
 
             StyledTextLabel {
@@ -126,7 +148,7 @@ Rectangle {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: menuBtn.left
-                anchors.leftMargin: 4
+                anchors.leftMargin: root.leftVisibleMargin + 4
                 anchors.rightMargin: 8
                 horizontalAlignment: Qt.AlignLeft
             }
@@ -190,7 +212,7 @@ Rectangle {
                 width: 16
                 height: 16
                 anchors.right: parent.right
-                anchors.rightMargin: 4
+                anchors.rightMargin: root.rightVisibleMargin + 4
                 anchors.verticalCenter: parent.verticalCenter
 
                 menuModel: contextMenuModel
@@ -209,8 +231,41 @@ Rectangle {
             anchors.bottom: parent.bottom
 
             clipColor: root.clipColor
-            clipLeft: root.x
             clipSelected: root.clipSelected
+        }
+
+        Rectangle {
+            id: selectionHighlight
+            anchors.fill: parent
+            border.width: 1
+            border.color: root.clipSelected ? "white" : "transparent"
+            color: "transparent"
+            radius: root.radius
+            z: 2
+        }
+    }
+
+    ClipHandles {
+        id: clipHandles
+
+        // +1 not to overlap with header
+        y: header.height + 1
+        width: root.width
+        clipHovered: hover
+
+        // make sure clip handles are visible on top of nearby clips
+        onHandlesVisibleChanged: {
+            if (handlesVisible) {
+                root.parent.z = 1
+            } else {
+                root.parent.z = 0
+            }
+        }
+
+        onClipHandlesMousePositionChanged: function(xWithinClipHandles, yWithinClipHandles) {
+            var xWithinClipItem = xWithinClipHandles
+            var yWithinClipItem = header.height + 1 + yWithinClipHandles
+            clipItemMousePositionChanged(xWithinClipItem, yWithinClipItem)
         }
     }
 

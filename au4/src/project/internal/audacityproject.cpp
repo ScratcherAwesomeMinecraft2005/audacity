@@ -9,7 +9,7 @@
 
 using namespace muse;
 using namespace au::project;
-using namespace au::processing;
+using namespace au::trackedit;
 using namespace au::projectscene;
 
 static QString projectDefaultTitle()
@@ -19,7 +19,7 @@ static QString projectDefaultTitle()
 
 Audacity4Project::Audacity4Project()
 {
-    m_processingProject = std::make_shared<ProcessingProject>();
+    m_trackeditProject = trackeditProjectCreator()->create();
 }
 
 muse::Ret Audacity4Project::load(const muse::io::path_t& path, bool forceMode, const std::string& format_)
@@ -70,11 +70,6 @@ muse::Ret Audacity4Project::doLoad(const io::path_t& path, bool forceMode, const
     }
 
     LOGI() << "success loaded au3 project: " << m_au3Project->title();
-
-    m_processingProject = std::make_shared<processing::ProcessingProject>();
-    m_processingProject->setAudacity3Project(m_au3Project);
-
-    m_processingProject->dump();
 
     //! NOTE At the moment, view state don't saved and loaded
     m_viewState = viewStateCreator()->createViewState();
@@ -234,6 +229,11 @@ Ret Audacity4Project::save(const muse::io::path_t& path, SaveMode saveMode)
     return make_ret(Err::UnknownError);
 }
 
+async::Notification Audacity4Project::captureThumbnailRequested() const
+{
+    return m_captureThumbnailRequested;
+}
+
 Ret Audacity4Project::saveProject(const muse::io::path_t& path, const std::string& fileSuffix, bool generateBackup, bool createThumbnail)
 {
     return doSave(path, generateBackup, createThumbnail);
@@ -244,7 +244,10 @@ Ret Audacity4Project::doSave(const muse::io::path_t& savePath, bool generateBack
     TRACEFUNC;
 
     UNUSED(generateBackup);
-    UNUSED(createThumbnail);
+
+    if (createThumbnail) {
+        m_captureThumbnailRequested.notify();
+    }
 
     if ((fileSystem()->exists(savePath) && !fileSystem()->isWritable(savePath))) {
         LOGE() << "failed save, not writable path: " << savePath;
@@ -394,9 +397,9 @@ void Audacity4Project::setNeedSave(bool needSave)
     // m_needSaveNotification.notify();
 }
 
-const ProcessingProjectPtr Audacity4Project::processingProject() const
+const ITrackeditProjectPtr Audacity4Project::trackeditProject() const
 {
-    return m_processingProject;
+    return m_trackeditProject;
 }
 
 IProjectViewStatePtr Audacity4Project::viewState() const

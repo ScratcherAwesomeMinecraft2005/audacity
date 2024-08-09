@@ -4,15 +4,30 @@ import Muse.Ui
 import Muse.UiComponents
 
 import Audacity.ProjectScene
+import Audacity.Project
 
 Rectangle {
 
     id: root
 
+    property bool clipHovered: false
     color: ui.theme.backgroundPrimaryColor
 
     TracksListClipsModel {
         id: tracksModel
+    }
+
+    ProjectPropertiesModel {
+        id: project
+
+        onCaptureThumbnail: function captureThumbnail() {
+            // hide playCursor for the time grabbing image
+            playCursor.visible = false
+            content.grabToImage(function(result) {
+                playCursor.visible = true
+                result.saveToFile(project.thumbnailUrl)
+            })
+        }
     }
 
     //! NOTE Sync with TracksPanel
@@ -27,6 +42,11 @@ Rectangle {
 
     PlayCursorController {
         id: playCursorController
+        context: timeline.context
+    }
+
+    PlayPositionActionController {
+        id: playPositionActionController
         context: timeline.context
     }
 
@@ -47,7 +67,9 @@ Rectangle {
     function init() {
         timeline.init()
         playCursorController.init()
+        playPositionActionController.init()
         tracksViewState.init()
+        project.init()
         //! NOTE Loading tracks, or rather clips, is the most havy operation.
         // Let's make sure that everything is loaded and initialized before this,
         // to avoid double loading at the beginning, when some parameters are initialized.
@@ -79,63 +101,63 @@ Rectangle {
         color: ui.theme.backgroundTertiaryColor
     }
 
-    Rectangle {
-        id: content
-        anchors.fill: parent
-        anchors.leftMargin: 12
+    Timeline {
+        id: timeline
+
+        anchors.top: parent.top
+        anchors.left: timelineIndent.right
+        anchors.right: parent.right
+
+        height: 77
+
+        MouseArea {
+            id: timelineMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+
+            onPositionChanged: function(e) {
+                lineCursor.x = e.x
+                if (pressed) {
+                    playCursorController.seekToX(e.x)
+                }
+            }
+
+            onClicked: function (e) {
+                playCursorController.seekToX(e.x)
+            }
+        }
 
         Rectangle {
             id: lineCursor
 
             y: parent.top
-            z: timeline.z + 1
-
             height: timeline.height
             width: 1
 
             color: ui.theme.fontPrimaryColor
         }
+    }
 
-        Timeline {
-            id: timeline
+    Rectangle {
+        id: content
+        objectName: "clipsView"
+        anchors.leftMargin: 12
+        anchors.top: timeline.bottom
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
 
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-
-            height: 77
-            z: 2
-
-            MouseArea {
-                id: timelineMouseArea
-                anchors.fill: parent
-                hoverEnabled: true
-
-                onPositionChanged: function(e) {
-                    lineCursor.x = e.x
-                }
-
-                onClicked: function (e) {
-                    playCursorController.seekToX(e.x)
-                }
-            }
-        }
+        // anchors.leftMargin: 130
+        // anchors.rightMargin: 130
 
         GridLines {
             timelineRuler: timeline.ruler
-
-            anchors.top: timeline.bottom
-            anchors.bottom: parent.bottom
-            anchors.left: timeline.left
-            anchors.right: parent.right
+            anchors.fill: parent
         }
 
         MouseArea {
             id: mainMouseArea
-            anchors.top: timeline.bottom
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
+            anchors.fill: parent
 
             property bool mouseOnTracks: false
             property bool isNeedSelectionCursor: !selectionController.selectionActive && mainMouseArea.mouseOnTracks
@@ -165,17 +187,23 @@ Rectangle {
                 mouseOnTracks = e.y < view.visibleContentHeight
                 selectionController.onPositionChanged(e.x, e.y)
                 lineCursor.x = e.x
+                if (root.clipHovered) {
+                    root.clipHovered = false
+                }
             }
             onReleased: e => selectionController.onReleased(e.x, e.y)
+
+            onClicked: {
+                if (!root.clipHovered) {
+                    selectionController.resetSelectedClip()
+                }
+            }
         }
 
         StyledListView {
             id: view
 
-            anchors.top: timeline.bottom
-            anchors.bottom: parent.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
+            anchors.fill: parent
             clip: false
 
             property real visibleContentHeight: view.contentHeight - view.contentY
@@ -209,6 +237,13 @@ Rectangle {
                 context: timeline.context
                 trackId: model.trackId
                 isDataSelected: model.isDataSelected
+
+                onTrackItemMousePositionChanged: function(xWithinTrack, yWithinTrack) {
+                    lineCursor.x = xWithinTrack
+                    if (!root.clipHovered) {
+                        root.clipHovered = true
+                    }
+                }
             }
         }
 
@@ -224,6 +259,15 @@ Rectangle {
             anchors.bottom: parent.bottom
             x: playCursorController.positionX
             z: 2
+            timelinePressed: timelineMouseArea.pressed
+
+            onSetPlaybackPosition: function(ix) {
+                playCursorController.seekToX(ix)
+            }
+
+            onPlayCursorMousePositionChanged: function(ix) {
+                lineCursor.x = ix
+            }
         }
 
         VerticalRulersPanel {

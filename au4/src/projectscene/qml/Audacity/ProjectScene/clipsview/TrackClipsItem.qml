@@ -15,6 +15,9 @@ Item {
 
     signal interactionStarted()
     signal interactionEnded()
+    // mouse position event is not propagated on overlapping mouse areas
+    // so we are handling it manually
+    signal trackItemMousePositionChanged(real x, real y)
 
     height: trackViewState.trackHeight
 
@@ -42,6 +45,7 @@ Item {
     }
 
     Item {
+        id: clipsContaner
         anchors.fill: parent
         anchors.bottomMargin: sep.height
         z: 1
@@ -58,12 +62,32 @@ Item {
                 width: clipItem.width
                 x: clipItem.x
 
-                sourceComponent: clipItem.width < 24 ? placeholderComp : clipComp
+                asynchronous: true
+
+                sourceComponent: {
+                    if ((clipItem.x + clipItem.width) < (0 - clipsModel.cacheBufferPx)) {
+                        return null
+                    }
+
+                    if (clipItem.x > (clipsContaner.width + clipsModel.cacheBufferPx)) {
+                        return null
+                    }
+
+                    if (clipItem.width < 2) {
+                        return null
+                    }
+
+                    if (clipItem.width < 24) {
+                        return clipSmallComp
+                    }
+
+                    return clipComp
+                }
             }
         }
 
         Component {
-            id: placeholderComp
+            id: clipSmallComp
 
             ClipItemSmall {
 
@@ -81,14 +105,20 @@ Item {
                 title: clipItem.title
                 clipColor: clipItem.color
                 clipKey: clipItem.key
+                clipTime: clipItem.time
                 clipSelected: clipItem.selected
+                leftVisibleMargin: clipItem.leftVisibleMargin
+                rightVisibleMargin: clipItem.rightVisibleMargin
                 collapsed: trackViewState.isTrackCollapsed
 
-                dragMaximumX: clipItem.moveMaximumX + borderWidth
-                dragMinimumX: clipItem.moveMinimumX - borderWidth
+                onClipMoved: function(deltaX, completed) {
+                    clipsModel.moveClip(clipItem.key, deltaX, completed)
+                }
 
-                onPositionChanged: function(x) {
-                    clipsModel.modeClip(clipItem.key, x)
+                onClipItemMousePositionChanged: function(xWithinClip, yWithinClip) {
+                    var yWithinTrack = yWithinClip
+                    var xWithinTrack = xWithinClip + clipItem.x
+                    trackItemMousePositionChanged(xWithinTrack, yWithinTrack)
                 }
 
                 onRequestSelected: {
@@ -128,7 +158,7 @@ Item {
         id: selectedHighlight
         z: 0
         anchors.fill: parent
-        color: ui.theme.white
+        color: "#FFFFFF"
         opacity: 0.05
         visible: root.isDataSelected
     }
@@ -161,5 +191,6 @@ Item {
         id: sep
         color: "#FFFFFF"
         opacity: 0.1
-        anchors.bottom: parent.bottom }
+        anchors.bottom: parent.bottom
+    }
 }

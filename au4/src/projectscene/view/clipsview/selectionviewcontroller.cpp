@@ -7,7 +7,7 @@
 
 using namespace au::projectscene;
 using namespace au::project;
-using namespace au::processing;
+using namespace au::trackedit;
 
 constexpr double MIN_SELECTION_PX = 12.0;
 
@@ -98,6 +98,11 @@ void SelectionViewController::onSelectionDraged(double x1, double x2, bool compl
     selectionController()->setDataSelectedEndTime(m_context->positionToTime(x2, true /*withSnap*/), completed);
 }
 
+void SelectionViewController::resetSelectedClip()
+{
+    selectionController()->resetSelectedClip();
+}
+
 IProjectViewStatePtr SelectionViewController::viewState() const
 {
     IAudacityProjectPtr prj = globalContext()->currentProject();
@@ -106,7 +111,7 @@ IProjectViewStatePtr SelectionViewController::viewState() const
 
 std::vector<TrackId> SelectionViewController::trackIdList() const
 {
-    ProcessingProjectPtr prj = globalContext()->currentProcessingProject();
+    ITrackeditProjectPtr prj = globalContext()->currentTrackeditProject();
     return prj ? prj->trackIdList() : std::vector<TrackId>();
 }
 

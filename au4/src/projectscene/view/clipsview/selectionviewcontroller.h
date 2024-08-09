@@ -7,7 +7,7 @@
 
 #include "modularity/ioc.h"
 #include "context/iglobalcontext.h"
-#include "processing/iselectioncontroller.h"
+#include "trackedit/iselectioncontroller.h"
 
 #include "../timeline/timelinecontext.h"
 
@@ -20,7 +20,7 @@ class SelectionViewController : public QObject
     Q_PROPERTY(bool selectionActive READ selectionActive NOTIFY selectionActiveChanged FINAL)
 
     muse::Inject<context::IGlobalContext> globalContext;
-    muse::Inject<processing::ISelectionController> selectionController;
+    muse::Inject<trackedit::ISelectionController> selectionController;
 
 public:
     SelectionViewController(QObject* parent = nullptr);
@@ -35,6 +35,7 @@ public:
     Q_INVOKABLE void onPositionChanged(double x, double y);
     Q_INVOKABLE void onReleased(double x, double y);
     Q_INVOKABLE void onSelectionDraged(double x, double x2, bool completed);
+    Q_INVOKABLE void resetSelectedClip();
 
     bool selectionActive() const;
     void setSelectionActive(bool newSelectionActive);
@@ -50,9 +51,9 @@ signals:
 private:
 
     IProjectViewStatePtr viewState() const;
-    std::vector<processing::TrackId> trackIdList() const;
+    std::vector<trackedit::TrackId> trackIdList() const;
 
-    std::vector<processing::TrackId> determinateTracks(double y1, double y2) const;
+    std::vector<trackedit::TrackId> determinateTracks(double y1, double y2) const;
 
     TimelineContext* m_context = nullptr;
 

@@ -61,7 +61,7 @@ ListItemBlank {
 
         ColumnLayout {
             Layout.margins: 12
-
+            Layout.alignment: Qt.AlignTop
             spacing: 12
 
             RowLayout {
@@ -109,6 +109,21 @@ ListItemBlank {
 
                 spacing: 16
 
+                BalanceKnob {
+                    value: root.item.balance
+
+                    onNewValueRequested: function(newValue) {
+                        root.item.balance = newValue
+                    }
+                }
+
+                StyledSlider {
+                    Layout.fillWidth: true
+
+                    value: root.item.volumeLevel
+                }
+
+
                 RowLayout {
                     Layout.fillWidth: true
 
@@ -138,24 +153,6 @@ ListItemBlank {
                         }
                     }
                 }
-
-                StyledSlider {
-                    Layout.fillWidth: true
-
-                    value: root.item.volumeLevel
-                }
-
-                KnobControl {
-                    from: -100
-                    to: 100
-                    value: root.item.balance
-                    stepSize: 1
-                    isBalanceKnob: true
-
-                    onNewValueRequested: function(newValue) {
-                        root.item.balance = newValue
-                    }
-                }
             }
 
             FlatButton {
@@ -174,23 +171,52 @@ ListItemBlank {
         SeparatorLine {}
 
         Row {
-            Layout.fillHeight: true
-            Layout.preferredWidth: childrenRect.width
-            Layout.margins: 8
+            id: volumePressureContainer
+            Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
+            Layout.preferredWidth: 24
+            Layout.preferredHeight: root.height
+            topPadding: 5
 
             spacing: 2
-
-            VolumePressureMeter {
-                id: leftPressure
-                height: parent.height
-                currentVolumePressure: root.item.leftChannelPressure
+            Repeater {
+                id: volumePressureMeters
+                model: root.item.channelCount
+                VolumePressureMeter {
+                    currentVolumePressure: index === 0 ? root.item.leftChannelPressure :
+                                                         root.item.rightChannelPressure
+                }
             }
 
-            VolumePressureMeter {
-                id: rightPressure
-                height: parent.height
-                currentVolumePressure: root.item.rightChannelPressure
-            }
+            states: [
+                State {
+                    when: root.item.channelCount === 1
+                    name: "mono"
+                    PropertyChanges {
+                        target: volumePressureContainer
+                        leftPadding: 8
+                    }
+                    PropertyChanges {
+                        target: volumePressureMeters.itemAt(0)
+                        indicatorWidth: 8
+                    }
+                },
+                State {
+                    when: root.item.channelCount === 2
+                    name: "stereo"
+                    PropertyChanges {
+                        target: volumePressureContainer
+                        leftPadding: 4
+                    }
+                    PropertyChanges {
+                        target: volumePressureMeters.itemAt(0)
+                        indicatorWidth: 7
+                    }
+                    PropertyChanges {
+                        target: volumePressureMeters.itemAt(1)
+                        indicatorWidth: 7
+                    }
+                }
+            ]
         }
     }
 

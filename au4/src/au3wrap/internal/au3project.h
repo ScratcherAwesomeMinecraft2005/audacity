@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "../iau3project.h"
-#include "ProjectHistory.h"
 
 namespace au::au3 {
 struct Au3ProjectData;
@@ -24,24 +23,12 @@ public:
 
     std::string title() const override;
 
-    std::vector<processing::TrackId> trackIdList() const override;
-    muse::async::NotifyList<processing::Track> trackList() const override;
-    muse::async::NotifyList<processing::Clip> clipList(const processing::TrackId& trackId) const override;
-
-    processing::TimeSignature timeSignature() const override;
-    void setTimeSignature(const processing::TimeSignature& timeSignature) override;
-    muse::async::Channel<au::processing::TimeSignature> timeSignatureChanged() const override;
-
-    void pushHistoryState(const std::string& longDescription, const std::string& shortDescription) override;
-
     // internal
     uintptr_t au3ProjectPtr() const override;
 
 private:
 
     std::shared_ptr<Au3ProjectData> m_data;
-    mutable muse::async::ChangedNotifier<processing::Track> m_trackChangedNotifier;
-    mutable muse::async::Channel<au::processing::TimeSignature> m_timeSignatureChanged;
 };
 
 class Au3ProjectCreator : public IAu3ProjectCreator

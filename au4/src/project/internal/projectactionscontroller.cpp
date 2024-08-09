@@ -31,8 +31,9 @@ void ProjectActionsController::init()
     dispatcher()->reg(this, "file-save", [this]() { saveProject(SaveMode::Save); });
     //! TODO AU4: decide whether to implement these functions from scratch in AU4 or
     //! to install our own implementation of the UI (BasicUI API)
-    // dispatcher()->reg(this, "file-save-as", [this]() { saveProject(SaveMode::SaveAs); });
-    // dispatcher()->reg(this, "file-save-backup", [this]() { saveProject(SaveMode::SaveCopy); });
+    //! right now there's only BasicUI stub which means there's no progress dialog shown on saving
+    dispatcher()->reg(this, "file-save-as", [this]() { saveProject(SaveMode::SaveAs); });
+    dispatcher()->reg(this, "file-save-backup", [this]() { saveProject(SaveMode::SaveCopy); });
 
     dispatcher()->reg(this, "export-audio", this, &ProjectActionsController::exportAudio);
     dispatcher()->reg(this, "export-labels", this, &ProjectActionsController::exportLabels);
@@ -46,6 +47,22 @@ void ProjectActionsController::init()
 
     dispatcher()->reg(this, "undo", this, &ProjectActionsController::undo);
     dispatcher()->reg(this, "redo", this, &ProjectActionsController::redo);
+}
+
+bool ProjectActionsController::canReceiveAction(const muse::actions::ActionCode& code) const
+{
+    if (!currentProject()) {
+        static const std::unordered_set<actions::ActionCode> DONT_REQUIRE_OPEN_PROJECT {
+            "file-new",
+            "file-open",
+            "continue-last-session",
+            "clear-recent",
+        };
+
+        return muse::contains(DONT_REQUIRE_OPEN_PROJECT, code);
+    }
+
+    return true;
 }
 
 IAudacityProjectPtr ProjectActionsController::currentProject() const

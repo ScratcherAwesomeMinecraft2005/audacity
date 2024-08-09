@@ -5,19 +5,19 @@
 
 using namespace au::projectscene;
 
-ClipListItem::ClipListItem(const processing::Clip& clip)
-    : m_clip(clip)
+ClipListItem::ClipListItem(QObject* parent)
+    : QObject(parent)
 {
 }
 
-void ClipListItem::setClip(const processing::Clip& clip)
+void ClipListItem::setClip(const trackedit::Clip& clip)
 {
     m_clip = clip;
 
     emit titleChanged();
 }
 
-const au::processing::Clip& ClipListItem::clip() const
+const au::trackedit::Clip& ClipListItem::clip() const
 {
     return m_clip;
 }
@@ -71,34 +71,6 @@ void ClipListItem::setWidth(double newWidth)
     emit widthChanged();
 }
 
-double ClipListItem::moveMaximumX() const
-{
-    return m_moveMaximumX;
-}
-
-void ClipListItem::setMoveMaximumX(double newMoveMaximumX)
-{
-    if (qFuzzyCompare(m_moveMaximumX, newMoveMaximumX)) {
-        return;
-    }
-    m_moveMaximumX = newMoveMaximumX;
-    emit moveMaximumXChanged();
-}
-
-double ClipListItem::moveMinimumX() const
-{
-    return m_moveMinimumX;
-}
-
-void ClipListItem::setMoveMinimumX(double newMoveMinimumX)
-{
-    if (qFuzzyCompare(m_moveMinimumX, newMoveMinimumX)) {
-        return;
-    }
-    m_moveMinimumX = newMoveMinimumX;
-    emit moveMinimumXChanged();
-}
-
 bool ClipListItem::selected() const
 {
     return m_selected;
@@ -111,4 +83,44 @@ void ClipListItem::setSelected(bool newSelected)
     }
     m_selected = newSelected;
     emit selectedChanged();
+}
+
+ClipTime ClipListItem::time() const
+{
+    return m_time;
+}
+
+void ClipListItem::setTime(const ClipTime& newTime)
+{
+    if (m_time == newTime) {
+        return;
+    }
+    m_time = newTime;
+    emit timeChanged();
+}
+
+double ClipListItem::leftVisibleMargin() const
+{
+    return m_leftVisibleMargin;
+}
+
+void ClipListItem::setLeftVisibleMargin(double newLeftVisibleMargin)
+{
+    if (qFuzzyCompare(m_leftVisibleMargin, newLeftVisibleMargin))
+        return;
+    m_leftVisibleMargin = newLeftVisibleMargin;
+    emit leftVisibleMarginChanged();
+}
+
+double ClipListItem::rightVisibleMargin() const
+{
+    return m_rightVisibleMargin;
+}
+
+void ClipListItem::setRightVisibleMargin(double newRightVisibleMargin)
+{
+    if (qFuzzyCompare(m_rightVisibleMargin, newRightVisibleMargin))
+        return;
+    m_rightVisibleMargin = newRightVisibleMargin;
+    emit rightVisibleMarginChanged();
 }

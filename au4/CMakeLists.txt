@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   muse_framework
   GIT_REPOSITORY https://github.com/musescore/framework_tmp.git
-  GIT_TAG        u0722
+  GIT_TAG        u0806
 )
 
 FetchContent_GetProperties(muse_framework)
@@ -178,7 +178,7 @@ set(MUSE_MODULE_AUDIO OFF)
 set(MUSE_MODULE_AUTOBOT OFF)
 set(MUSE_MODULE_CLOUD ON)
 set(MUSE_MODULE_CLOUD_MUSESCORECOM OFF CACHE BOOL "Enable MuseScore.com account" FORCE)
-set(MUSE_MODULE_DIAGNOSTICS OFF)
+set(MUSE_MODULE_DIAGNOSTICS ON)
 set(MUSE_MODULE_DRAW ON)
 set(MUSE_MODULE_DRAW_TESTS OFF)
 set(MUSE_MODULE_EXTENSIONS OFF)
@@ -205,6 +205,7 @@ option(AU_BUILD_PLAYBACK_TESTS "Build playback tests" ON)
 option(AU_BUILD_RECORD_MODULE "Build record module" ON)
 option(AU_BUILD_PROJECTSCENE_MODULE "Build projectscene modules" ON)
 option(AU_BUILD_PROJECTSCENE_TESTS "Build projectscene tests" ON)
+option(AU_BUILD_EFFECTS_MODULE "Build effects module" ON)
 
 # === Setup ===
 

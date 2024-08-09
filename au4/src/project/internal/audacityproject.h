@@ -7,6 +7,7 @@
 #include "au3wrap/iau3project.h"
 #include "io/ifilesystem.h"
 #include "projectscene/iprojectviewstatecreator.h"
+#include "trackedit/itrackeditproject.h"
 
 namespace au::au3 {
 class Au3Project;
@@ -15,16 +16,16 @@ class Au3Project;
 namespace au::project {
 //! NOTE There are quite a lot of "projects" right now, it can get confusing
 //! The main project of AU4 is au::project::Audacity4Project
-//! It contains (will contain) a processing project (au::processing::ProcessingProject)
-//! and various settings that are not directly related to processing
+//! It contains a trackedit project (au::trackedit::TrackeditProject)
+//! and various settings that are not directly related to trackedit
 //! (for example, mixer settings, selected effects, etc.).
-//! A processing project is the main project for processing samples, tracks, operations on them...
+//! A trackedit project is the main project for editing of samples, tracks, operations on them...
 //!
 //! Perhaps now the division into two projects seems unnecessary.
 //! But in the future, there will be a lot of data that needs
 //! to be stored with the project (even covers, notes, etc.),
-//! which are not related to processing.
-//! At the same time, the processing project will be inherently complex,
+//! which are not related to tracks edit.
+//! At the same time, the trackedit project will be inherently complex,
 //! so we want to simplify it and remove from it everything that does not concern it.
 //!
 //! There is also a project from AU3 (::AudacityProject),
@@ -38,6 +39,7 @@ namespace au::project {
 class Audacity4Project : public IAudacityProject
 {
     muse::Inject<au3::IAu3ProjectCreator> au3ProjectCreator;
+    muse::Inject<trackedit::ITrackeditProjectCreator> trackeditProjectCreator;
     muse::Inject<muse::io::IFileSystem> fileSystem;
     muse::Inject<projectscene::IProjectViewStateCreator> viewStateCreator;
     muse::Inject<context::IGlobalContext> globalContext;
@@ -67,7 +69,9 @@ public:
 
     muse::Ret save(const muse::io::path_t& path = muse::io::path_t(), SaveMode saveMode = SaveMode::Save) override;
 
-    const au::processing::ProcessingProjectPtr processingProject() const override;
+    muse::async::Notification captureThumbnailRequested() const override;
+
+    const au::trackedit::ITrackeditProjectPtr trackeditProject() const override;
 
     projectscene::IProjectViewStatePtr viewState() const override;
 
@@ -92,6 +96,7 @@ private:
     muse::io::path_t m_path;
     muse::async::Notification m_pathChanged;
     muse::async::Notification m_displayNameChanged;
+    muse::async::Notification m_captureThumbnailRequested;
 
     bool m_isNewlyCreated = false; /// true if the file has never been saved yet
     bool m_isImported = false;
@@ -99,7 +104,7 @@ private:
 
     std::shared_ptr<au::au3::IAu3Project> m_au3Project;
 
-    processing::ProcessingProjectPtr m_processingProject;
+    trackedit::ITrackeditProjectPtr m_trackeditProject;
 
     projectscene::IProjectViewStatePtr m_viewState;
 };

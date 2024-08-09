@@ -23,6 +23,7 @@
 #include "view/clipsview/clipslistmodel.h"
 #include "view/clipsview/cliplistitem.h"
 #include "view/clipsview/waveview.h"
+#include "view/clipsview/au3/au3wavepainter.h"
 #include "view/clipsview/clipcontextmenumodel.h"
 #include "view/clipsview/selectionviewcontroller.h"
 
@@ -33,6 +34,7 @@
 #include "view/timeline/gridlines.h"
 
 #include "view/playcursor/playcursorcontroller.h"
+#include "view/playcursor/playpositionactioncontroller.h"
 
 #include "view/statusbar/selectionstatusmodel.h"
 
@@ -68,6 +70,7 @@ void ProjectSceneModule::registerExports()
     ioc()->registerExport<IProjectSceneConfiguration>(moduleName(), m_configuration);
     ioc()->registerExport<IProjectViewStateCreator>(moduleName(), new ProjectViewStateCreator());
     ioc()->registerExport<IProjectSceneActionsController>(moduleName(), m_projectSceneActionsController);
+    ioc()->registerExport<IWavePainter>(moduleName(), new Au3WavePainter());
 }
 
 void ProjectSceneModule::resolveImports()
@@ -116,6 +119,7 @@ void ProjectSceneModule::registerUiTypes()
 
     // play cursor
     qmlRegisterType<PlayCursorController>("Audacity.ProjectScene", 1, 0, "PlayCursorController");
+    qmlRegisterType<PlayPositionActionController>("Audacity.ProjectScene", 1, 0, "PlayPositionActionController");
 
     // status bar
     qmlRegisterType<SelectionStatusModel>("Audacity.ProjectScene", 1, 0, "SelectionStatusModel");
