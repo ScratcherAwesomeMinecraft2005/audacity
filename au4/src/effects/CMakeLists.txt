@@ -8,6 +8,9 @@ set(MODULE_QRC effects.qrc)
 set(MODULE_QML_IMPORT ${CMAKE_CURRENT_LIST_DIR}/qml)
 
 set(MODULE_SRC
+    #public
+    ${CMAKE_CURRENT_LIST_DIR}/effectsettings.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/effectsettings.h
     ${CMAKE_CURRENT_LIST_DIR}/effectsmodule.cpp
     ${CMAKE_CURRENT_LIST_DIR}/effectsmodule.h
     ${CMAKE_CURRENT_LIST_DIR}/effectstypes.h
@@ -15,6 +18,7 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/ieffectsconfiguration.h
     ${CMAKE_CURRENT_LIST_DIR}/ieffectsuiengine.h
 
+    #internal
     ${CMAKE_CURRENT_LIST_DIR}/internal/effectsconfiguration.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/effectsconfiguration.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/effectsactionscontroller.cpp
@@ -32,5 +36,26 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/view/abstracteffectmodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/abstracteffectmodel.h
     )
+
+if (AU_MODULE_VST)
+    set(MODULE_SRC ${MODULE_SRC}
+        ${CMAKE_CURRENT_LIST_DIR}/internal/au3/vst3pluginsscanner.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/internal/au3/vst3pluginsscanner.h
+        ${CMAKE_CURRENT_LIST_DIR}/internal/au3/vst3pluginsmetareader.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/internal/au3/vst3pluginsmetareader.h
+    )
+endif()
+
+# AU3
+include(${CMAKE_CURRENT_LIST_DIR}/../au3wrap/au3defs.cmake)
+
+set(MODULE_INCLUDE ${AU3_INCLUDE})
+set(MODULE_DEF ${AU3_DEF})
+
+if(AU_MODULE_VST)
+    set(MODULE_DEF ${MODULE_DEF} -DAU_MODULE_VST)
+endif()
+
+set(MODULE_LINK au3wrap)
 
 setup_module()

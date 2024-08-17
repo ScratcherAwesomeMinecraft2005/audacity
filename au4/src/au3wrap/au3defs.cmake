@@ -13,6 +13,7 @@ set(AU3_DEF
     # This value is used in the resource compiler for Windows
     -DAUDACITY_FILE_VERSION=L"${AUDACITY_VERSION},${AUDACITY_RELEASE},${AUDACITY_REVISION},${AUDACITY_MODLEVEL}"
 
+    -Dsafenew=new
 
     -DUTILITY_API=
     -DPROJECT_API=
@@ -57,6 +58,11 @@ set(AU3_DEF
     -DWAVE_TRACK_PAINT_API=
 
     -DEXPERIMENTAL_SPECTRAL_EDITING
+
+    -DEFFECTS_API=
+    -DVST3_API=
+
+    -DCOMMAND_PARAMETERS_API=
 )
 
 set(AU3_LIBRARIES ${AUDACITY_ROOT}/libraries)
@@ -118,6 +124,13 @@ set(AU3_INCLUDE
     ${AU3_LIBRARIES}/lib-time-frequency-selection
     ${AU3_LIBRARIES}/lib-graphics
     ${AU3_LIBRARIES}/lib-wave-track-paint
+
+    # effects
+    ${AU3_LIBRARIES}/lib-effects
+    ${AU3_LIBRARIES}/lib-audio-unit
+    ${AU3_LIBRARIES}/lib-command-parameters
+
+    ${AU3_LIBRARIES}/lib-vst3
 )
 
 set(WXBASE_RESTRICTIONS

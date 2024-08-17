@@ -60,26 +60,49 @@ void PlayPositionActionController::playPositionIncrease()
 
 void PlayPositionActionController::init()
 {
+    IProjectViewStatePtr viewState = globalContext()->currentProject()->viewState();
+
+    viewState->snap().ch.onReceive(this, [this](const Snap& snap){
+        if (snap.enabled) {
+            snapCurrentPosition();
+        }
+    });
+
     dispatcher()->reg(this, PLAY_POSITION_DECREASE, this, &PlayPositionActionController::playPositionDecrease);
     dispatcher()->reg(this, PLAY_POSITION_INCREASE, this, &PlayPositionActionController::playPositionIncrease);
+}
+
+void PlayPositionActionController::snapCurrentPosition()
+{
+    audio::secs_t currentPlaybackPosition = globalContext()->playbackState()->playbackPosition();
+    double currentXPosition = m_context->timeToPosition(currentPlaybackPosition);
+    audio::secs_t secs = m_context->positionToTime(currentXPosition, true);
+    if (muse::RealIsEqualOrMore(secs, 0.0) || !muse::RealIsEqual(secs, currentPlaybackPosition)) {
+        dispatcher()->dispatch("playback_seek", ActionData::make_arg1<double>(secs));
+    }
 }
 
 void PlayPositionActionController::applySingleStep(Direction direction)
 {
     IProjectViewStatePtr viewState = globalContext()->currentProject()->viewState();
-    bool snapEnabled = viewState->isSnapEnabled().val;
+    bool snapEnabled = viewState->isSnapEnabled();
 
     audio::secs_t currentPlaybackPosition = globalContext()->playbackState()->playbackPosition();
-    double newXPosition;
-    if (direction == Direction::Left) {
-        newXPosition = m_context->timeToPosition(currentPlaybackPosition) - 1;
-    } else {
-        newXPosition = m_context->timeToPosition(currentPlaybackPosition) + 1;
-    }
+    audio::secs_t secs = 0;
 
-    //! TODO AU4 implement snapping behaviour
-    Q_UNUSED(snapEnabled);
-    audio::secs_t secs = m_context->positionToTime(newXPosition /*, snapEnabled*/);
+    if (snapEnabled) {
+        double currentXPosition = m_context->timeToPosition(currentPlaybackPosition);
+        secs = m_context->singleStepToTime(currentXPosition, direction, viewState->snap().val);
+    } else {
+        double newXPosition = 0.0;
+        if (direction == Direction::Left) {
+            newXPosition = m_context->timeToPosition(currentPlaybackPosition) - 1;
+        } else {
+            newXPosition = m_context->timeToPosition(currentPlaybackPosition) + 1;
+        }
+
+        secs = m_context->positionToTime(newXPosition);
+    }
 
     if (muse::RealIsEqualOrMore(secs, 0.0)) {
         dispatcher()->dispatch("playback_seek", ActionData::make_arg1<double>(secs));

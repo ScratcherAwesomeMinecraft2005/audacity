@@ -2,6 +2,7 @@
 * Audacity: A Digital Audio Editor
 */
 #include "au3wrapmodule.h"
+#include "effects/effectsettings.h"
 
 #include <wx/log.h>
 

@@ -3,14 +3,27 @@
 */
 #include "effectsmodule.h"
 
+#include "libraries/lib-files/FileNames.h"
+#include "libraries/lib-module-manager/PluginManager.h"
+
 #include "ui/iuiactionsregister.h"
 #include "ui/iinteractiveuriregister.h"
+
+#include "audioplugins/iaudiopluginsscannerregister.h"
+#include "audioplugins/iaudiopluginmetareaderregister.h"
 
 #include "internal/effectsprovider.h"
 #include "internal/effectsconfiguration.h"
 #include "internal/effectsactionscontroller.h"
 #include "internal/effectsuiengine.h"
 #include "internal/effectsuiactions.h"
+
+#ifdef AU_MODULE_VST
+#include "internal/au3/vst3pluginsscanner.h"
+#include "internal/au3/vst3pluginsmetareader.h"
+#endif
+
+#include "effectsettings.h"
 
 #include "view/effectbuilder.h"
 
@@ -47,6 +60,20 @@ void EffectsModule::resolveImports()
     if (ir) {
         ir->registerQmlUri(muse::Uri("audacity://effects/viewer"), "Audacity/Effects/EffectsViewerDialog.qml");
     }
+
+    auto scannerRegister = ioc()->resolve<muse::audioplugins::IAudioPluginsScannerRegister>(moduleName());
+    if (scannerRegister) {
+#ifdef AU_MODULE_VST
+        scannerRegister->registerScanner(std::make_shared<Vst3PluginsScanner>());
+#endif
+    }
+
+    auto metaReaderRegister = ioc()->resolve<muse::audioplugins::IAudioPluginMetaReaderRegister>(moduleName());
+    if (metaReaderRegister) {
+#ifdef AU_MODULE_VST
+        metaReaderRegister->registerReader(std::make_shared<Vst3PluginsMetaReader>());
+#endif
+    }
 }
 
 void EffectsModule::registerResources()
@@ -64,6 +91,10 @@ void EffectsModule::onInit(const muse::IApplication::RunMode& mode)
     if (mode != muse::IApplication::RunMode::GuiApp) {
         return;
     }
+
+    PluginManager::Get().Initialize([](const FilePath& localFileName) {
+        return std::make_unique<au3::EffectSettings>(localFileName.ToStdString());
+    });
 
     m_actionsController->init();
 }

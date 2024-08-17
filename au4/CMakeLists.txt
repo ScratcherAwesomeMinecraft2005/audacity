@@ -24,7 +24,7 @@ include(FetchContent)
 FetchContent_Declare(
   muse_framework
   GIT_REPOSITORY https://github.com/musescore/framework_tmp.git
-  GIT_TAG        u0806
+  GIT_TAG        u0816
 )
 
 FetchContent_GetProperties(muse_framework)
@@ -175,6 +175,7 @@ set(MUSE_ENABLE_UNIT_TESTS ON)
 set(MUSE_MODULE_ACCESSIBILITY ON)
 set(MUSE_MODULE_ACTIONS ON)
 set(MUSE_MODULE_AUDIO OFF)
+set(MUSE_MODULE_AUDIOPLUGINS ON)
 set(MUSE_MODULE_AUTOBOT OFF)
 set(MUSE_MODULE_CLOUD ON)
 set(MUSE_MODULE_CLOUD_MUSESCORECOM OFF CACHE BOOL "Enable MuseScore.com account" FORCE)
@@ -206,6 +207,9 @@ option(AU_BUILD_RECORD_MODULE "Build record module" ON)
 option(AU_BUILD_PROJECTSCENE_MODULE "Build projectscene modules" ON)
 option(AU_BUILD_PROJECTSCENE_TESTS "Build projectscene tests" ON)
 option(AU_BUILD_EFFECTS_MODULE "Build effects module" ON)
+
+option(AU_MODULE_VST "Build audacity vst module" OFF)
+set(AU_MODULE_VST_VST3_SDK_PATH "" CACHE PATH "Path to VST3_SDK. SDK version >= ${VST3_SDK_VERSION} required")
 
 # === Setup ===
 

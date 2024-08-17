@@ -21,6 +21,10 @@
 # This module stores global state
 declare_module(au3wrap)
 
+if(AU_MODULE_VST)
+    add_subdirectory("vst3")
+endif()
+
 set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/au3wrapmodule.cpp
     ${CMAKE_CURRENT_LIST_DIR}/au3wrapmodule.h
@@ -120,6 +124,8 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-strings/Internat.h
     ${AU3_LIBRARIES}/lib-strings/Base64.cpp
     ${AU3_LIBRARIES}/lib-strings/Base64.h
+    ${AU3_LIBRARIES}/lib-strings/Identifier.cpp
+    ${AU3_LIBRARIES}/lib-strings/Identifier.h
 
     ${AU3_LIBRARIES}/lib-exceptions/AudacityException.cpp
     ${AU3_LIBRARIES}/lib-exceptions/AudacityException.h
@@ -146,6 +152,7 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-utility/MemoryX.h
     ${AU3_LIBRARIES}/lib-utility/ModuleConstants.cpp
     ${AU3_LIBRARIES}/lib-utility/ModuleConstants.h
+    ${AU3_LIBRARIES}/lib-utility/TypedAny.h
 
     ${AU3_LIBRARIES}/lib-files/AudacityLogger.cpp
     ${AU3_LIBRARIES}/lib-files/AudacityLogger.h
@@ -186,6 +193,14 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-wave-track/SampleBlock.h
     ${AU3_LIBRARIES}/lib-wave-track/WaveTrackUtilities.cpp
     ${AU3_LIBRARIES}/lib-wave-track/WaveTrackUtilities.h
+    ${AU3_LIBRARIES}/lib-wave-track/WaveTrackSink.cpp
+    ${AU3_LIBRARIES}/lib-wave-track/WaveTrackSink.h
+    ${AU3_LIBRARIES}/lib-wave-track/TimeStretching.cpp
+    ${AU3_LIBRARIES}/lib-wave-track/TimeStretching.h
+    ${AU3_LIBRARIES}/lib-wave-track/WaveChannelUtilities.cpp
+    ${AU3_LIBRARIES}/lib-wave-track/WaveChannelUtilities.h
+    ${AU3_LIBRARIES}/lib-wave-track/WaveClipUtilities.cpp
+    ${AU3_LIBRARIES}/lib-wave-track/WaveClipUtilities.h
 
     ${AU3_LIBRARIES}/lib-sample-track/SampleTrack.cpp
     ${AU3_LIBRARIES}/lib-sample-track/SampleTrack.h
@@ -255,6 +270,10 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphBuffers.h
     ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphSource.cpp
     ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphSource.h
+    ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphSink.cpp
+    ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphSink.h
+    ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphTask.cpp
+    ${AU3_LIBRARIES}/lib-audio-graph/AudioGraphTask.h
 
     ${AU3_LIBRARIES}/lib-math/SampleFormat.cpp
     ${AU3_LIBRARIES}/lib-math/SampleFormat.h
@@ -318,6 +337,8 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-mixer/EffectStage.h
     ${AU3_LIBRARIES}/lib-mixer/MixerOptions.cpp
     ${AU3_LIBRARIES}/lib-mixer/MixerOptions.h
+    ${AU3_LIBRARIES}/lib-mixer/WideSampleSource.cpp
+    ${AU3_LIBRARIES}/lib-mixer/WideSampleSource.h
 
     ${AU3_LIBRARIES}/lib-module-manager/PluginManager.cpp
     ${AU3_LIBRARIES}/lib-module-manager/PluginManager.h
@@ -329,6 +350,8 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-module-manager/PluginInterface.h
     ${AU3_LIBRARIES}/lib-module-manager/ModuleSettings.cpp
     ${AU3_LIBRARIES}/lib-module-manager/ModuleSettings.h
+    ${AU3_LIBRARIES}/lib-module-manager/ConfigInterface.cpp
+    ${AU3_LIBRARIES}/lib-module-manager/ConfigInterface.h
 
     ${AU3_LIBRARIES}/lib-components/EffectAutomationParameters.cpp
     ${AU3_LIBRARIES}/lib-components/EffectAutomationParameters.h
@@ -337,6 +360,10 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-components/ComponentInterface.cpp
     ${AU3_LIBRARIES}/lib-components/ComponentInterface.h
     ${AU3_LIBRARIES}/lib-components/ComponentInterfaceSymbol.h
+    ${AU3_LIBRARIES}/lib-components/SettingsVisitor.cpp
+    ${AU3_LIBRARIES}/lib-components/SettingsVisitor.h
+    ${AU3_LIBRARIES}/lib-components/PluginProvider.cpp
+    ${AU3_LIBRARIES}/lib-components/PluginProvider.h
 
     ${AU3_LIBRARIES}/lib-time-frequency-selection/SelectedRegion.cpp
     ${AU3_LIBRARIES}/lib-time-frequency-selection/SelectedRegion.h
@@ -377,11 +404,103 @@ set(AU3_SRC
     ${AU3_LIBRARIES}/lib-numeric-formats/ProjectTimeSignature.h
     ${AU3_LIBRARIES}/lib-numeric-formats/Beats.cpp
     ${AU3_LIBRARIES}/lib-numeric-formats/Beats.h
+    ${AU3_LIBRARIES}/lib-numeric-formats/NumericConverterFormats.cpp
+    ${AU3_LIBRARIES}/lib-numeric-formats/NumericConverterFormats.h
+    ${AU3_LIBRARIES}/lib-numeric-formats/NumericConverterRegistry.cpp
+    ${AU3_LIBRARIES}/lib-numeric-formats/NumericConverterRegistry.h
+    ${AU3_LIBRARIES}/lib-numeric-formats/ProjectNumericFormats.cpp
+    ${AU3_LIBRARIES}/lib-numeric-formats/ProjectNumericFormats.h
+    ${AU3_LIBRARIES}/lib-numeric-formats/NumericConverterFormatterContext.cpp
+    ${AU3_LIBRARIES}/lib-numeric-formats/NumericConverterFormatterContext.h
 
     # Requires wxApp, so we won't use it
     # ${AU3_LIBRARIES}/lib-wx-init/SettingsWX.cpp
     # ${AU3_LIBRARIES}/lib-wx-init/SettingsWX.h
+
+    ${AU3_LIBRARIES}/lib-effects/StatefulEffectBase.cpp
+    ${AU3_LIBRARIES}/lib-effects/StatefulEffectBase.h
+    ${AU3_LIBRARIES}/lib-effects/PerTrackEffect.cpp
+    ${AU3_LIBRARIES}/lib-effects/PerTrackEffect.h
+    ${AU3_LIBRARIES}/lib-effects/EffectBase.cpp
+    ${AU3_LIBRARIES}/lib-effects/EffectBase.h
+    ${AU3_LIBRARIES}/lib-effects/EffectPlugin.cpp
+    ${AU3_LIBRARIES}/lib-effects/EffectPlugin.h
+    ${AU3_LIBRARIES}/lib-effects/EffectOutputTracks.cpp
+    ${AU3_LIBRARIES}/lib-effects/EffectOutputTracks.h
+    ${AU3_LIBRARIES}/lib-effects/Effect.cpp
+    ${AU3_LIBRARIES}/lib-effects/Effect.h
+    ${AU3_LIBRARIES}/lib-effects/LoadEffects.cpp
+    ${AU3_LIBRARIES}/lib-effects/LoadEffects.h
+
+    ${AU3_LIBRARIES}/lib-audio-unit/AudioUnitEffectsModule.cpp
+    ${AU3_LIBRARIES}/lib-audio-unit/AudioUnitEffectsModule.h
+
+    ${AU3_LIBRARIES}/lib-command-parameters/ShuttleAutomation.cpp
+    ${AU3_LIBRARIES}/lib-command-parameters/ShuttleAutomation.h
 )
+
+if(AU_MODULE_VST)
+    set(MODULE_SRC ${MODULE_SRC}
+        ${AU3_LIBRARIES}/lib-vst3/AudacityVst3HostApplication.cpp
+        ${AU3_LIBRARIES}/lib-vst3/AudacityVst3HostApplication.h
+        ${AU3_LIBRARIES}/lib-vst3/VST3EffectBase.cpp
+        ${AU3_LIBRARIES}/lib-vst3/VST3EffectBase.h
+        ${AU3_LIBRARIES}/lib-vst3/VST3EffectsModule.cpp
+        ${AU3_LIBRARIES}/lib-vst3/VST3EffectsModule.h
+        ${AU3_LIBRARIES}/lib-vst3/VST3Instance.cpp
+        ${AU3_LIBRARIES}/lib-vst3/VST3Instance.h
+        ${AU3_LIBRARIES}/lib-vst3/VST3Utils.cpp
+        ${AU3_LIBRARIES}/lib-vst3/VST3Utils.h
+        ${AU3_LIBRARIES}/lib-vst3/VST3Wrapper.cpp
+        ${AU3_LIBRARIES}/lib-vst3/VST3Wrapper.h
+        ${AU3_LIBRARIES}/lib-vst3/internal/ConnectionProxy.cpp
+        ${AU3_LIBRARIES}/lib-vst3/internal/ConnectionProxy.h
+        ${AU3_LIBRARIES}/lib-vst3/memorystream.cpp
+        ${AU3_LIBRARIES}/lib-vst3/memorystream.h
+    )
+endif()
+
+include(GetPlatformInfo)
+
+if(OS_IS_WIN)
+    set(MODULE_SRC ${MODULE_SRC}
+        ${AU3_LIBRARIES}/lib-files/PlatformCompatibilityWindows.cpp
+    )
+
+    if (AU_MODULE_VST)
+        set(MODULE_SRC ${MODULE_SRC}
+            ${AU3_LIBRARIES}/lib-vst3/module_win32.cpp
+        )
+    endif()
+
+elseif(OS_IS_LIN)
+    set(MODULE_SRC ${MODULE_SRC}
+        ${AU3_LIBRARIES}/lib-files/PlatformCompatibilityLinux.cpp
+    )
+
+    if (AU_MODULE_VST)
+        set(MODULE_SRC ${MODULE_SRC}
+            ${AU3_LIBRARIES}/lib-vst3/module_linux.cpp
+        )
+    endif()
+elseif(OS_IS_MAC)
+    set(MODULE_SRC ${MODULE_SRC}
+        ${AU3_LIBRARIES}/lib-files/PlatformCompatibilityMacOS.cpp
+    )
+
+    if (AU_MODULE_VST)
+        set(MODULE_SRC ${MODULE_SRC}
+            ${AU3_LIBRARIES}/lib-vst3/module_mac.mm
+        )
+
+        set_source_files_properties(
+            ${AU3_LIBRARIES}/lib-vst3/module_mac.mm
+            PROPERTIES
+            SKIP_UNITY_BUILD_INCLUSION ON
+            SKIP_PRECOMPILE_HEADERS ON
+            )
+    endif()
+endif()
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/thirdparty/sqlite au3-sqlite)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/thirdparty/soxr au3-soxr)
@@ -394,7 +513,18 @@ set(MODULE_DEF ${AU3_DEF})
 set(MODULE_SRC ${MODULE_SRC} ${AU3_SRC})
 set(MODULE_LINK ${AU3_LINK})
 
+if (AU_MODULE_VST)
+    set(MODULE_INCLUDE ${MODULE_INCLUDE} ${AU_MODULE_VST_VST3_SDK_PATH})
+    set(MODULE_LINK ${MODULE_LINK} vst_sdk_3)
+endif()
+
 set(MODULE_USE_PCH_NONE ON)
 set(MODULE_USE_UNITY_NONE ON)
 
 setup_module()
+
+target_no_warning(${MODULE} -w)
+
+if (CC_IS_CLANG)
+    set_property(TARGET ${MODULE} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc")
+endif()
