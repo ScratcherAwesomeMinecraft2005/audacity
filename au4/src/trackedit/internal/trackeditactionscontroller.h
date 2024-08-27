@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Audacity: A Digital Audio Editor
 */
 #pragma once
@@ -33,16 +33,26 @@ public:
 private:
     void notifyActionCheckedChanged(const muse::actions::ActionCode& actionCode);
 
+    void doGlobalDelete();
+
     void clipCut();
     void clipCopy();
-    void clipDelete();
+    void clipDelete(const muse::actions::ActionData& args);
+
+    void clipCutSelected();
+    void clipCopySelected();
     void clipDeleteSelected();
+
+    void paste();
+
     void toggleLoopRegion();
     void clearLoopRegion();
     void setLoopRegionToSelection();
     void setSelectionToLoop();
     void setLoopRegionIn();
     void setLoopRegionOut();
+
+    void pushProjectHistoryDeleteState(secs_t start, secs_t duration);
 
     muse::async::Channel<muse::actions::ActionCode> m_actionCheckedChanged;
 };

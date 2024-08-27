@@ -6,6 +6,7 @@
 #include "modularity/ioc.h"
 #include "audioplugins/iknownaudiopluginsregister.h"
 #include "effects/ieffectsconfiguration.h"
+#include "global/iinteractive.h"
 
 #include "effects/ieffectsprovider.h"
 
@@ -14,6 +15,7 @@ class EffectsProvider : public IEffectsProvider
 {
     muse::Inject<IEffectsConfiguration> configuration;
     muse::Inject<muse::audioplugins::IKnownAudioPluginsRegister> knownPlugins;
+    muse::Inject<muse::IInteractive> interactive;
 
 public:
     void reloadEffects() override;
@@ -23,7 +25,9 @@ public:
 
     EffectCategoryList effectsCategoryList() const override;
 
-    EffectMeta meta(const muse::String& id) const override;
+    EffectMeta meta(const muse::String& effectId) const override;
+
+    muse::Ret showEffect(const muse::String& type, const EffectInstanceId& instanceId) override;
 
 private:
     mutable EffectMetaList m_effects;

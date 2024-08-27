@@ -33,32 +33,37 @@ EffectBuilder::EffectBuilder(QObject* parent)
     : QObject(parent)
 {}
 
-void EffectBuilder::load(const QString& id, QObject* itemParent)
+void EffectBuilder::load(const QString& type, const QString& instanceId, QObject* itemParent)
 {
-    EffectMeta meta = provider()->meta(id);
-    if (!meta.isValid()) {
-        LOGE() << "Not found manifest, id: " << id;
+    LOGD() << "type: " << type << ", instanceId: " << instanceId;
+
+    QString url = viewRegister()->viewUrl(type);
+    if (url.isEmpty()) {
+        LOGE() << "Not found view for type: " << type;
         return;
     }
+    LOGD() << "found view for type: " << type << ", url: " << url;
 
-    setTitle(meta.title);
-
-    QQmlEngine* engin = engine()->qmlEngine();
+    QQmlEngine* qmlEngine = engine()->qmlEngine();
 
     //! NOTE We create extension UI using a separate engine to control what we provide,
     //! making it easier to maintain backward compatibility and stability.
-    QQmlComponent component = QQmlComponent(engin, meta.url.toQString());
+    QQmlComponent component = QQmlComponent(qmlEngine, url);
     if (!component.isReady()) {
-        LOGE() << "Failed to load QML file: " << meta.url;
+        LOGE() << "Failed to load QML file: " << url;
         LOGE() << component.errorString();
         return;
     }
 
-    QObject* obj = component.createWithInitialProperties({ { "parent", QVariant::fromValue(itemParent) } });
+    QObject* obj = component.createWithInitialProperties(
+    {
+        { "parent", QVariant::fromValue(itemParent) },
+        { "instanceId", QVariant::fromValue(instanceId) }
+    });
 
     m_contentItem = qobject_cast<QQuickItem*>(obj);
     if (!m_contentItem) {
-        LOGE() << "Component not QuickItem, file: " << meta.url;
+        LOGE() << "Component not QuickItem, file: " << url;
     }
 
     if (m_contentItem) {
@@ -83,19 +88,4 @@ void EffectBuilder::load(const QString& id, QObject* itemParent)
 QQuickItem* EffectBuilder::contentItem() const
 {
     return m_contentItem;
-}
-
-void EffectBuilder::setTitle(QString title)
-{
-    if (m_title == title) {
-        return;
-    }
-
-    m_title = title;
-    emit titleChanged();
-}
-
-QString EffectBuilder::title() const
-{
-    return m_title;
 }

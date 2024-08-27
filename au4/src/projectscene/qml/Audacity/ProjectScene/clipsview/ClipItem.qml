@@ -114,7 +114,7 @@ Rectangle {
                 cursorShape: Qt.OpenHandCursor
 
                 property bool moveActive: false
-                property int moveLastX: 0
+                property real moveLastX: 0.0
 
                 onPositionChanged: function(e) {
                     root.clipItemMousePositionChanged(e.x, e.y)
@@ -251,7 +251,7 @@ Rectangle {
         // +1 not to overlap with header
         y: header.height + 1
         width: root.width
-        clipHovered: hover
+        handlesVisible: root.clipSelected
 
         // make sure clip handles are visible on top of nearby clips
         onHandlesVisibleChanged: {

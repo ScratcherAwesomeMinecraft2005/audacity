@@ -1,17 +1,18 @@
 /*
 * Audacity: A Digital Audio Editor
 */
+/*
+* Audacity: A Digital Audio Editor
+*/
 #pragma once
 
 #include <vector>
 
 #include "global/types/string.h"
-#include "global/io/path.h"
 
 namespace au::effects {
 struct EffectMeta {
     muse::String id;
-    muse::io::path_t url;
     muse::String title;
     muse::String description;
     muse::String version;
@@ -32,4 +33,9 @@ struct EffectCategory {
 };
 
 using EffectCategoryList = std::vector<EffectCategory>;
+
+constexpr const char16_t* VST_CATEGORY_ID = u"vst";
+constexpr const char16_t* BUILTIN_CATEGORY_ID = u"builtin";
+
+using EffectInstanceId = uint64_t;
 }

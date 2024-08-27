@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "async/notification.h"
+#include "global/types/ret.h"
+#include "global/async/notification.h"
 
 #include "modularity/imoduleinterface.h"
 
@@ -25,6 +26,8 @@ public:
 
     virtual EffectCategoryList effectsCategoryList() const = 0;
 
-    virtual EffectMeta meta(const muse::String& id) const = 0;
+    virtual EffectMeta meta(const muse::String& effectId) const = 0;
+
+    virtual muse::Ret showEffect(const muse::String& type, const EffectInstanceId& instanceId) = 0; // type - is Symbol of effect
 };
 }

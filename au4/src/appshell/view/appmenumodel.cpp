@@ -113,14 +113,9 @@ void AppMenuModel::setupConnections()
     //     workspacesItem.setSubitems(makeWorkspacesItems());
     // });
 
-    // extensionsProvider()->manifestListChanged().onNotify(this, [this]() {
-    //     MenuItem& pluginsMenu = findMenu("menu-plugins");
-    //     pluginsMenu.setSubitems(makePluginsMenuSubitems());
-    // });
-
     effectsProvider()->effectMetaListChanged().onNotify(this, [this]() {
-        MenuItem& pluginsItem = findMenu("menu-effect");
-        pluginsItem.setSubitems(makeEffectsItems());
+        MenuItem& effectsItem = findMenu("menu-effect");
+        effectsItem.setSubitems(makeEffectsItems());
     });
 }
 
@@ -175,10 +170,10 @@ MenuItem* AppMenuModel::makeEditMenu()
         makeMenuItem("undo"),
         makeMenuItem("redo"),
         makeSeparator(),
-        makeMenuItem("cut"),
-        makeMenuItem("copy"),
+        makeMenuItem("clip-cut-selected"),
+        makeMenuItem("clip-copy-selected"),
         makeMenuItem("paste"),
-        makeMenuItem("clip-delete-selected"),
+        makeMenuItem("delete"),
         makeSeparator(),
         makeMenuItem("cut-and-close-gap"),
         makeMenuItem("duplicate"),
@@ -336,23 +331,6 @@ MenuItem* AppMenuModel::makeToolsMenu()
     };
 
     return makeMenu(TranslatableString("appshell/menu/tools", "&Tools"), toolsItems, "menu-tools");
-}
-
-MenuItemList AppMenuModel::makePluginsMenuSubitems()
-{
-    MenuItemList subitems {
-        makeMenuItem("manage-plugins"),
-    };
-
-    MenuItemList enabledPlugins = makePluginsItems();
-
-    if (!enabledPlugins.empty()) {
-        subitems << makeSeparator();
-    }
-
-    subitems << enabledPlugins;
-
-    return subitems;
 }
 
 MenuItem* AppMenuModel::makeExtraMenu()
@@ -701,59 +679,6 @@ MenuItemList AppMenuModel::makeShowItems()
     return items;
 }
 
-MenuItemList AppMenuModel::makePluginsItems()
-{
-    MenuItemList result;
-
-    //! TODO AU4
-    // KnownCategories categories = extensionsProvider()->knownCategories();
-    // ManifestList enabledExtensions = extensionsProvider()->manifestList(Filter::Enabled);
-
-    // auto addMenuItems = [this](MenuItemList& items, const Manifest& m) {
-    //     if (m.actions.size() == 1) {
-    //         const extensions::Action& a = m.actions.at(0);
-    //         items << makeMenuItem(makeUriQuery(m.uri, a.code).toString(), TranslatableString::untranslatable(a.title));
-    //     } else {
-    //         MenuItemList sub;
-    //         for (const extensions::Action& a : m.actions) {
-    //             sub << makeMenuItem(makeUriQuery(m.uri, a.code).toString(), TranslatableString::untranslatable(a.title));
-    //         }
-    //         items << makeMenu(TranslatableString::untranslatable(m.title), sub);
-    //     }
-    // };
-
-    // std::map<std::string, MenuItemList> categoriesMap;
-    // MenuItemList pluginsWithoutCategories;
-    // for (const Manifest& m : enabledExtensions) {
-    //     std::string categoryStr = m.category.toStdString();
-    //     if (muse::contains(categories, categoryStr)) {
-    //         MenuItemList& items = categoriesMap[categoryStr];
-    //         addMenuItems(items, m);
-    //     } else {
-    //         addMenuItems(pluginsWithoutCategories, m);
-    //     }
-    // }
-
-    // for (const auto& it : categoriesMap) {
-    //     TranslatableString categoryTitle = muse::value(categories, it.first, {});
-    //     result << makeMenu(categoryTitle, it.second);
-    // }
-
-    // std::sort(result.begin(), result.end(), [](const MenuItem& l, const MenuItem& r) {
-    //     return l.translatedTitle() < r.translatedTitle();
-    // });
-
-    // std::sort(pluginsWithoutCategories.begin(), pluginsWithoutCategories.end(), [](const MenuItem& l, const MenuItem& r) {
-    //     return l.translatedTitle() < r.translatedTitle();
-    // });
-
-    // for (MenuItem* plugin : pluginsWithoutCategories) {
-    //     result << plugin;
-    // }
-
-    return result;
-}
-
 MenuItemList AppMenuModel::makeEffectsItems()
 {
     MenuItemList items {
@@ -774,6 +699,7 @@ MenuItemList AppMenuModel::makeEffectsItems()
 
     for (const effects::EffectMeta& meta : metaList) {
         MenuItem* item = makeMenuItem("effect-open", TranslatableString::untranslatable(meta.title));
+        item->setId(meta.id);
         item->setArgs(ActionData::make_arg1<muse::String>(meta.id));
 
         effectsToCategoryMap[meta.categoryId].push_back(item);
@@ -782,9 +708,6 @@ MenuItemList AppMenuModel::makeEffectsItems()
     for (const effects::EffectCategory& category : effectsProvider()->effectsCategoryList()) {
         items << makeMenu(TranslatableString::untranslatable(category.title), effectsToCategoryMap[category.id]);
     }
-
-    items << makeSeparator()
-          << makeMenuItem("plugins-omitted");
 
     return items;
 }

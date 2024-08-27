@@ -3,7 +3,6 @@
 */
 #include "effectsmodule.h"
 
-#include "libraries/lib-files/FileNames.h"
 #include "libraries/lib-module-manager/PluginManager.h"
 
 #include "ui/iuiactionsregister.h"
@@ -15,8 +14,10 @@
 #include "internal/effectsprovider.h"
 #include "internal/effectsconfiguration.h"
 #include "internal/effectsactionscontroller.h"
-#include "internal/effectsuiengine.h"
 #include "internal/effectsuiactions.h"
+#include "internal/effectinstancesregister.h"
+
+#include "builtin/builtineffects.h"
 
 #ifdef AU_MODULE_VST
 #include "internal/au3/vst3pluginsscanner.h"
@@ -25,7 +26,9 @@
 
 #include "effectsettings.h"
 
+#include "view/effectsviewregister.h"
 #include "view/effectbuilder.h"
+#include "view/effectsuiengine.h"
 
 using namespace au::effects;
 
@@ -47,7 +50,9 @@ void EffectsModule::registerExports()
 
     ioc()->registerExport<IEffectsProvider>(moduleName(), m_provider);
     ioc()->registerExport<IEffectsConfiguration>(moduleName(), m_configuration);
+    ioc()->registerExport<IEffectsViewRegister>(moduleName(), new EffectsViewRegister());
     ioc()->registerExport<IEffectsUiEngine>(moduleName(), new EffectsUiEngine());
+    ioc()->registerExport<IEffectInstancesRegister>(moduleName(), new EffectInstancesRegister());
 }
 
 void EffectsModule::resolveImports()
@@ -86,20 +91,21 @@ void EffectsModule::registerUiTypes()
     qmlRegisterType<EffectBuilder>("Audacity.Effects", 1, 0, "EffectBuilder");
 }
 
-void EffectsModule::onInit(const muse::IApplication::RunMode& mode)
+void EffectsModule::onInit(const muse::IApplication::RunMode&)
 {
-    if (mode != muse::IApplication::RunMode::GuiApp) {
-        return;
-    }
+    //! NOTE Should be before PluginManager::Get().Initialize
+    BuiltinEffects::init();
 
     PluginManager::Get().Initialize([](const FilePath& localFileName) {
         return std::make_unique<au3::EffectSettings>(localFileName.ToStdString());
     });
 
     m_actionsController->init();
+
+    m_provider->reloadEffects();
 }
 
 void EffectsModule::onDelayedInit()
 {
-    m_provider->reloadEffects();
+    // m_provider->reloadEffects();
 }

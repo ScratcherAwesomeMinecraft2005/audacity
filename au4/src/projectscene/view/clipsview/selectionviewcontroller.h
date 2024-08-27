@@ -34,9 +34,11 @@ public:
     Q_INVOKABLE void onPressed(double x, double y);
     Q_INVOKABLE void onPositionChanged(double x, double y);
     Q_INVOKABLE void onReleased(double x, double y);
+    Q_INVOKABLE void onClicked(double x, double y);
     Q_INVOKABLE void onSelectionDraged(double x, double x2, bool completed);
     Q_INVOKABLE void resetSelectedClip();
     Q_INVOKABLE void resetDataSelection();
+    Q_INVOKABLE bool isLeftSelection(double x);
 
     bool selectionActive() const;
     void setSelectionActive(bool newSelectionActive);
