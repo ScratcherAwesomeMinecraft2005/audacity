@@ -44,6 +44,12 @@ void ClipsListModel::reload()
         return;
     }
 
+    prj->trackList().onItemChanged(this, [this](const Track& track){
+        if (track.id == m_trackId) {
+            reload();
+        }
+    });
+
     m_allClipList = prj->clipList(m_trackId);
 
     //! NOTE Clips in the track may not be in order (relative to startTime), here we arrange them.
@@ -51,6 +57,13 @@ void ClipsListModel::reload()
     //! To identify clips, clips have a key.
     std::sort(m_allClipList.begin(), m_allClipList.end(), [](const Clip& c1, const Clip& c2) {
         return c1.startTime < c2.startTime;
+    });
+
+    //! NOTE Reload everything if the list has changed completely
+    m_allClipList.onChanged(this, [this]() {
+        muse::async::Async::call(this, [this]() {
+            reload();
+        });
     });
 
     m_allClipList.onItemChanged(this, [this](const Clip& clip) {
@@ -259,6 +272,32 @@ bool ClipsListModel::moveClip(const ClipKey& key, double deltaX, bool completed)
     double deltaSec = deltaX / m_context->zoom();
 
     bool ok = trackeditInteraction()->changeClipStartTime(key.key, item->clip().startTime + deltaSec, completed);
+    return ok;
+}
+
+bool ClipsListModel::trimLeftClip(const ClipKey& key, double deltaX)
+{
+    ClipListItem* item = itemByKey(key.key);
+    IF_ASSERT_FAILED(item) {
+        return false;
+    }
+
+    const secs_t deltaSec = deltaX / m_context->zoom();
+
+    bool ok = trackeditInteraction()->trimClipLeft(key.key, deltaSec);
+    return ok;
+}
+
+bool ClipsListModel::trimRightClip(const ClipKey& key, double deltaX)
+{
+    ClipListItem* item = itemByKey(key.key);
+    IF_ASSERT_FAILED(item) {
+        return false;
+    }
+
+    const secs_t deltaSec = deltaX / m_context->zoom();
+
+    bool ok = trackeditInteraction()->trimClipRight(key.key, deltaSec);
     return ok;
 }
 

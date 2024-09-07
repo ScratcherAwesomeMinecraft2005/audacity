@@ -50,12 +50,31 @@ const UiActionList TrackeditUiActions::m_actions = {
              TranslatableString("action", "Set loop region out"),
              TranslatableString("action", "Set loop region out")
              ),
+    UiAction("copy",
+             au::context::UiCtxProjectFocused,
+             au::context::CTX_PROJECT_FOCUSED,
+             TranslatableString("action", "Copy"),
+             TranslatableString("action", "Copy"),
+             IconCode::Code::COPY
+             ),
     UiAction("delete",
              au::context::UiCtxProjectFocused,
              au::context::CTX_PROJECT_FOCUSED,
              TranslatableString("action", "De&lete"),
              TranslatableString("action", "Delete"),
              IconCode::Code::DELETE_TANK
+             ),
+    UiAction("split",
+             au::context::UiCtxProjectFocused,
+             au::context::CTX_PROJECT_FOCUSED,
+             TranslatableString("action", "Split"),
+             TranslatableString("action", "Split")
+             ),
+    UiAction("join",
+             au::context::UiCtxProjectFocused,
+             au::context::CTX_PROJECT_FOCUSED,
+             TranslatableString("action", "Merge selected clips"),
+             TranslatableString("action", "Merge selected clips")
              ),
     // clip
     UiAction("clip-cut",
@@ -121,11 +140,23 @@ const UiActionList TrackeditUiActions::m_actions = {
              TranslatableString("action", "Duplicate clip"),
              TranslatableString("action", "Duplicate clip")
              ),
-    UiAction("clip-split",
+    UiAction("track-split",
              au::context::UiCtxAny,
              au::context::CTX_ANY,
-             TranslatableString("action", "Split clip"),
-             TranslatableString("action", "Split clip")
+             TranslatableString("action", "Split"),
+             TranslatableString("action", "Split")
+             ),
+    UiAction("track-split-at",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Split at"),
+             TranslatableString("action", "Split at")
+             ),
+    UiAction("merge-selected-on-tracks",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Merge selected clips"),
+             TranslatableString("action", "Merge selected clips")
              ),
     UiAction("clip-export",
              au::context::UiCtxAny,
@@ -154,6 +185,38 @@ const UiActionList TrackeditUiActions::m_actions = {
              TranslatableString("action", "Render pitch and speed")
              ),
     //! ----------
+    UiAction("new-mono-track",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "New mono track"),
+             TranslatableString("action", "New mono track")
+             ),
+    UiAction("new-stereo-track",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "New stereo track"),
+             TranslatableString("action", "New stereo track")
+             ),
+    UiAction("new-label-track",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "New label track"),
+             TranslatableString("action", "New label track")
+             ),
+    UiAction("trim-audio-outside-selection",
+             au::context::UiCtxProjectOpened,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Trim"),
+             TranslatableString("action", "Trim"),
+             IconCode::Code::TRIM_AUDIO_OUTSIDE_SELECTION
+             ),
+    UiAction("silence-audio-selection",
+             au::context::UiCtxProjectOpened,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Silence"),
+             TranslatableString("action", "Silence"),
+             IconCode::Code::SILENCE_AUDIO_SELECTION
+             ),
 };
 
 TrackeditUiActions::TrackeditUiActions(std::shared_ptr<TrackeditActionsController> controller)

@@ -116,6 +116,14 @@ Item {
                     clipsModel.moveClip(clipItem.key, deltaX, completed)
                 }
 
+                onClipLeftTrimmed: function(deltaX) {
+                    clipsModel.trimLeftClip(clipItem.key, deltaX)
+                }
+
+                onClipRightTrimmed: function(deltaX) {
+                    clipsModel.trimRightClip(clipItem.key, deltaX)
+                }
+
                 onClipItemMousePositionChanged: function(xWithinClip, yWithinClip) {
                     var yWithinTrack = yWithinClip
                     var xWithinTrack = xWithinClip + clipItem.x
@@ -194,5 +202,6 @@ Item {
         color: "#FFFFFF"
         opacity: 0.1
         anchors.bottom: parent.bottom
+        separatorWidth: 2
     }
 }

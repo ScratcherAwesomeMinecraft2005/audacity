@@ -30,8 +30,6 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/au3wrapmodule.h
     ${CMAKE_CURRENT_LIST_DIR}/iau3project.h
 
-    ${CMAKE_CURRENT_LIST_DIR}/mocks/qtBasicUI.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/mocks/qtBasicUI.h
     ${CMAKE_CURRENT_LIST_DIR}/mocks/progressdialog.cpp
     ${CMAKE_CURRENT_LIST_DIR}/mocks/progressdialog.h
 
@@ -49,6 +47,8 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/au3audiodevicesprovider.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/au3commonsettings.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/au3commonsettings.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3basicui.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3basicui.h
     )
 
 
@@ -344,6 +344,12 @@ set(AU3_SRC
 
     ${AU3_LIBRARIES}/lib-mixer/Mix.cpp
     ${AU3_LIBRARIES}/lib-mixer/Mix.h
+    ${AU3_LIBRARIES}/lib-mixer/DownmixSource.cpp
+    ${AU3_LIBRARIES}/lib-mixer/DownmixSource.h
+    ${AU3_LIBRARIES}/lib-mixer/DownmixStage.cpp
+    ${AU3_LIBRARIES}/lib-mixer/DownmixStage.h
+    ${AU3_LIBRARIES}/lib-mixer/MixerSource.cpp
+    ${AU3_LIBRARIES}/lib-mixer/MixerSource.h
     ${AU3_LIBRARIES}/lib-mixer/MixerSource.cpp
     ${AU3_LIBRARIES}/lib-mixer/MixerSource.h
     ${AU3_LIBRARIES}/lib-mixer/EffectStage.cpp

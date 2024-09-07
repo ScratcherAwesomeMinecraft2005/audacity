@@ -60,7 +60,14 @@ void TimelineContext::init(double frameWidth)
 
     connect(this, &TimelineContext::frameTimeChanged, [this]() {
         emit horizontalScrollChanged();
+        emit selectionStartTimeChanged();
+        emit selectionEndTimeChanged();
     });
+
+    dispatcher()->reg(this, "zoom-in", this, &TimelineContext::zoomIn);
+    dispatcher()->reg(this, "zoom-out", this, &TimelineContext::zoomOut);
+    dispatcher()->reg(this, "fit-selection", this, &TimelineContext::fitSelectionToWidth);
+    dispatcher()->reg(this, "fit-project", this, &TimelineContext::fitProjectToWidth);
 
     onProjectChanged();
 
@@ -188,7 +195,8 @@ void TimelineContext::shiftFrameTime(double shift)
     double endTimeShift = shift;
 
     double minStartTime = 0.0;
-    double maxEndTime = std::max(m_lastZoomEndTime, trackEditProject()->totalTime().to_double());
+    double totalTime = trackEditProject()->totalTime().to_double();
+    double maxEndTime = std::max(m_lastZoomEndTime, totalTime);
 
     // do not shift to negative time values
     if (m_frameStartTime + timeShift < minStartTime) {
@@ -243,6 +251,92 @@ void TimelineContext::onProjectChanged()
     updateTimeSignature();
 }
 
+void TimelineContext::zoomIn()
+{
+    double newZoom = zoom() * 2.0;
+    double zoomPosition = findZoomFocusPosition();
+
+    setZoom(newZoom, zoomPosition);
+
+    double centerPosition = frameCenterPosition();
+    double centerTime = positionToTime(centerPosition);
+
+    //! update values after zooming
+    zoomPosition = findZoomFocusPosition();
+    double zoomTime = positionToTime(zoomPosition);
+
+    //! position center to zoom position
+    shiftFrameTime(zoomTime - centerTime);
+}
+
+void TimelineContext::zoomOut()
+{
+    double newZoom = zoom() / 2.0;
+    setZoom(newZoom, findZoomFocusPosition());
+}
+
+qreal TimelineContext::frameCenterPosition() const
+{
+    return m_frameWidth / 2.0;
+}
+
+qreal TimelineContext::selectionCenterPosition() const
+{
+    double centerTime = m_selecitonStartTime + (m_selectionEndTime - m_selecitonStartTime) / 2.0;
+    return timeToPosition(centerTime);
+}
+
+qreal TimelineContext::findZoomFocusPosition() const
+{
+    double result = 0.0;
+
+    if (!hasSelection()) {
+        // No selection: zoom at the center of the view
+        result = frameCenterPosition();
+    } else {
+        // Selection: zoom at the center of the selection
+        result = selectionCenterPosition();
+    }
+
+    return std::clamp(result, 0.0, m_frameWidth);
+}
+
+void TimelineContext::fitSelectionToWidth()
+{
+    if (!hasSelection()) {
+        return;
+    }
+
+    double zoomPosition = findZoomFocusPosition();
+
+    double newZoom = m_frameWidth / (m_selectionEndTime - m_selecitonStartTime);
+    setZoom(newZoom, zoomPosition);
+
+    double centerPosition = frameCenterPosition();
+    double centerTime = positionToTime(centerPosition);
+
+    //! update values after zooming
+    zoomPosition = selectionCenterPosition();
+    double zoomTime = positionToTime(zoomPosition);
+
+    //! position center to zoom position
+    shiftFrameTime(zoomTime - centerTime);
+}
+
+void TimelineContext::fitProjectToWidth()
+{
+    double totalTimeRange = trackEditProject()->totalTime();
+    if (muse::is_zero(totalTimeRange)) {
+        return;
+    }
+
+    double newZoom = m_frameWidth / totalTimeRange;
+    setZoom(newZoom, 0.0);
+
+    //! position view to begin
+    shiftFrameTime(0.0 - m_frameStartTime);
+}
+
 void TimelineContext::shiftFrameTimeOnStep(int direction)
 {
     double step = 30.0 / m_zoom;
@@ -254,6 +348,11 @@ void TimelineContext::updateFrameTime()
 {
     setFrameEndTime(positionToTime(m_frameWidth));
     emit frameTimeChanged();
+}
+
+bool TimelineContext::hasSelection() const
+{
+    return !muse::RealIsEqualOrLess(m_selecitonStartTime, 0.0) && !muse::RealIsEqualOrLess(m_selectionEndTime, 0.0);
 }
 
 double TimelineContext::timeToPosition(double time) const
@@ -308,26 +407,35 @@ double TimelineContext::zoom() const
 
 void TimelineContext::setZoom(double zoom, double mouseX)
 {
-    zoom = std::max(ZOOM_MIN, std::min(ZOOM_MAX, zoom));
+    double newZoom = std::max(ZOOM_MIN, std::min(ZOOM_MAX, zoom));
 
-    if (m_zoom != zoom) {
-        m_zoom = zoom;
-        emit zoomChanged();
-
-        double timeRange = m_frameEndTime - m_frameStartTime;
-        double mouseTime = m_frameStartTime + (mouseX / m_frameWidth) * timeRange;
-        double newTimeRange = positionToTime(m_frameWidth) - m_frameStartTime;
-
-        double newStartTime = mouseTime - (mouseX / m_frameWidth) * newTimeRange;
-        setFrameStartTime(std::max(newStartTime, 0.0));
-
-        double newEndTime = mouseTime + ((m_frameWidth - mouseX) / m_frameWidth) * newTimeRange;
-        m_lastZoomEndTime = newEndTime;
-        setFrameEndTime(newEndTime);
-
-        emit verticalScrollChanged();
-        emit frameTimeChanged();
+    if (muse::RealIsEqual(m_zoom, newZoom)) {
+        return;
     }
+
+    double timeRange = m_frameEndTime - m_frameStartTime;
+    double mouseTime = m_frameStartTime + (mouseX / m_frameWidth) * timeRange;
+
+    double totalTimeRange = trackEditProject()->totalTime() * 2.0;
+    double newTimeRange = (m_frameStartTime + m_frameWidth / newZoom) - m_frameStartTime;
+
+    if (!muse::is_zero(totalTimeRange) && muse::RealIsEqualOrMore(newTimeRange, totalTimeRange)) {
+        newTimeRange = totalTimeRange;
+        newZoom = m_frameWidth / totalTimeRange;
+    }
+
+    m_zoom = newZoom;
+    emit zoomChanged();
+
+    double newStartTime = mouseTime - (mouseX / m_frameWidth) * newTimeRange;
+    setFrameStartTime(std::max(newStartTime, 0.0));
+
+    double newEndTime = mouseTime + ((m_frameWidth - mouseX) / m_frameWidth) * newTimeRange;
+    m_lastZoomEndTime = newEndTime;
+    setFrameEndTime(newEndTime);
+
+    emit verticalScrollChanged();
+    emit frameTimeChanged();
 }
 
 int TimelineContext::BPM() const

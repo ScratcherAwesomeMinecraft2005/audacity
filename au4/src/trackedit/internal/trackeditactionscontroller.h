@@ -33,10 +33,13 @@ public:
 private:
     void notifyActionCheckedChanged(const muse::actions::ActionCode& actionCode);
 
+    void doGlobalCopy();
     void doGlobalDelete();
+    void doGlobalSplit();
+    void doGlobalJoin();
 
     void clipCut();
-    void clipCopy();
+    void clipCopy(const muse::actions::ActionData &args);
     void clipDelete(const muse::actions::ActionData& args);
 
     void clipCutSelected();
@@ -45,6 +48,10 @@ private:
 
     void paste();
 
+    void trackSplit(const muse::actions::ActionData &args);
+    void trackSplitAt(const muse::actions::ActionData &args);
+    void mergeSelectedOnTrack(const muse::actions::ActionData &args);
+
     void toggleLoopRegion();
     void clearLoopRegion();
     void setLoopRegionToSelection();
@@ -52,6 +59,17 @@ private:
     void setLoopRegionIn();
     void setLoopRegionOut();
 
+    void newMonoTrack();
+    void newStereoTrack();
+    void newLabelTrack();
+
+    void trimAudioOutsideSelection();
+    void silenceAudioSelection();
+
+    void pushProjectHistoryTrackAddedState();
+    void pushProjectHistoryTrackTrimState(secs_t start, secs_t end);
+    void pushProjectHistoryTrackSilenceState(secs_t start, secs_t end);
+    void pushProjectHistoryPasteState();
     void pushProjectHistoryDeleteState(secs_t start, secs_t duration);
 
     muse::async::Channel<muse::actions::ActionCode> m_actionCheckedChanged;

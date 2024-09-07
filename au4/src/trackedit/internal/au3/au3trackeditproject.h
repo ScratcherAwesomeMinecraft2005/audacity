@@ -5,22 +5,22 @@
 
 #include "../../itrackeditproject.h"
 
-#include "modularity/ioc.h"
-#include "context/iglobalcontext.h"
-
 class AudacityProject;
+struct TrackListEvent;
 namespace au::trackedit {
 class Au3TrackeditProject : public ITrackeditProject
 {
-    muse::Inject<au::context::IGlobalContext> globalContext;
-
 public:
-    Au3TrackeditProject() = default;
+    Au3TrackeditProject(const std::shared_ptr<au::au3::IAu3Project>& au3project);
+    ~Au3TrackeditProject();
 
     std::vector<TrackId> trackIdList() const override;
     muse::async::NotifyList<Track> trackList() const override;
     Clip clip(const ClipKey& key) const override;
     muse::async::NotifyList<Clip> clipList(const TrackId& trackId) const override;
+
+    void onTrackAdded(const Track& track) override;
+    void onTrackChanged(const Track& track) override;
 
     void onClipChanged(const Clip& clip) override;
     void onClipAdded(const Clip& clip) override;
@@ -36,10 +36,14 @@ public:
 
 private:
 
-    AudacityProject* au3ProjectPtr() const;
+    void onTrackListEvent(const TrackListEvent& e);
+    void onTrackDataChanged(const TrackId& trackId);
+
+    struct Au3Impl;
+    std::shared_ptr<Au3Impl> m_impl;
 
     mutable std::map<TrackId, muse::async::ChangedNotifier<Clip>> m_clipsChanged;
-    mutable muse::async::ChangedNotifier<trackedit::Track> m_trackChangedNotifier;
+    mutable muse::async::ChangedNotifier<trackedit::Track> m_tracksChanged;
     mutable muse::async::Channel<au::trackedit::TimeSignature> m_timeSignatureChanged;
 };
 
@@ -49,6 +53,6 @@ public:
 
     Au3TrackeditProjectCreator() = default;
 
-    ITrackeditProjectPtr create() const override;
+    ITrackeditProjectPtr create(const std::shared_ptr<au::au3::IAu3Project>& au3project) const override;
 };
 }

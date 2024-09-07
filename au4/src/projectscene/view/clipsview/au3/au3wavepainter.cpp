@@ -106,7 +106,8 @@ public:
 
     WaveformPainter& EnsureClip(const WaveClip& clip)
     {
-        if (&clip != mWaveClip) {
+        const auto changed = mChanged.exchange(false);
+        if (&clip != mWaveClip || changed) {
             mChannelCaches.clear();
         }
 
@@ -150,7 +151,7 @@ public:
 
         auto range = bitmapCache->PerformLookup(zoomInfo, metrics.fromTime, metrics.toTime);
 
-        int left = metrics.left;
+        double left = metrics.left;
         int height = metrics.height;
 
         for (auto it = range.begin(); it != range.end(); ++it) {
@@ -177,7 +178,10 @@ public:
         }
     }
 
-    void MarkChanged() noexcept override { }
+    void MarkChanged() noexcept override
+    {
+        mChanged.store(true);
+    }
 
     void Invalidate() override
     {
@@ -202,6 +206,7 @@ private:
     };
 
     std::vector<ChannelCaches> mChannelCaches;
+    std::atomic<bool> mChanged = false;
 };
 }
 
@@ -521,7 +526,11 @@ void DrawMinMaxRMS(int channelIndex, QPainter& painter,
         ColorFromQColor(style.clippedPen))
     .SetEnvelope(clip.GetEnvelope());
 
-    waveformPainter.Draw(channelIndex, painter, paintParameters, metrics);
+    WaveMetrics _metrics = metrics;
+    _metrics.fromTime += clip.GetTrimLeft();
+    _metrics.toTime += clip.GetTrimLeft();
+
+    waveformPainter.Draw(channelIndex, painter, paintParameters, _metrics);
 }
 
 static bool showIndividualSamples(const WaveClip& clip, bool zoom)

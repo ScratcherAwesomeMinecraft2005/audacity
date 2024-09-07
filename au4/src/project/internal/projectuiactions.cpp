@@ -131,12 +131,6 @@ const UiActionList ProjectUiActions::m_actions = {
              TranslatableString("action", "Trim clip"),
              TranslatableString("action", "Trim clip")
              ),
-    UiAction("split-clip",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Split clip"),
-             TranslatableString("action", "Split clip")
-             ),
     UiAction("split-into-new-track",
              au::context::UiCtxAny,
              au::context::CTX_ANY,
@@ -148,12 +142,6 @@ const UiActionList ProjectUiActions::m_actions = {
              au::context::CTX_ANY,
              TranslatableString("action", "Split clips at silences"),
              TranslatableString("action", "Split clips at silences")
-             ),
-    UiAction("merge-selected-clips",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Merge selected clips"),
-             TranslatableString("action", "Merge selected clips")
              ),
     UiAction("group-clips",
              au::context::UiCtxAny,
@@ -444,24 +432,6 @@ const UiActionList ProjectUiActions::m_actions = {
              ),
 
     // tracks menu
-    UiAction("new-mono-track",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "New mono track"),
-             TranslatableString("action", "New mono track")
-             ),
-    UiAction("new-stereo-track",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "New stereo track"),
-             TranslatableString("action", "New stereo track")
-             ),
-    UiAction("new-label-track",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "New label track"),
-             TranslatableString("action", "New label track")
-             ),
     UiAction("duplicate-track",
              au::context::UiCtxAny,
              au::context::CTX_ANY,

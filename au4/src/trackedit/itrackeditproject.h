@@ -13,6 +13,10 @@
 #include "trackedittypes.h"
 #include "dom/track.h"
 
+namespace au::au3 {
+class IAu3Project;
+}
+
 namespace au::trackedit {
 class ITrackeditProject
 {
@@ -23,6 +27,9 @@ public:
     virtual muse::async::NotifyList<Track> trackList() const = 0;
     virtual Clip clip(const ClipKey& key) const = 0;
     virtual muse::async::NotifyList<Clip> clipList(const TrackId& trackId) const = 0;
+
+    virtual void onTrackAdded(const Track& track) = 0;
+    virtual void onTrackChanged(const Track& track) = 0;
 
     virtual void onClipChanged(const Clip& clip) = 0;
     virtual void onClipAdded(const Clip& clip) = 0;
@@ -46,6 +53,6 @@ class ITrackeditProjectCreator : MODULE_EXPORT_INTERFACE
 public:
     virtual ~ITrackeditProjectCreator() = default;
 
-    virtual ITrackeditProjectPtr create() const = 0;
+    virtual ITrackeditProjectPtr create(const std::shared_ptr<au::au3::IAu3Project>& au3project) const = 0;
 };
 }

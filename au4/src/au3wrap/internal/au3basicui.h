@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include "global/async/asyncable.h"
+
 #include "BasicUI.h"
-class QtBasicUI final : public BasicUI::Services
+
+class Au3BasicUI final : public BasicUI::Services, public muse::async::Asyncable
 {
 public:
-    ~QtBasicUI() override;
+    ~Au3BasicUI() override;
 
 protected:
     void DoCallAfter(const BasicUI::Action& action) override;
