@@ -10,8 +10,11 @@ Item {
 
     property alias trackId: clipsModel.trackId
     property alias context: clipsModel.context
+    property var canvas: null
 
     property bool isDataSelected: false
+    property bool isStereo: clipsModel.isStereo
+    property double channelHeightRatio: isStereo ? 0.5 : 1
 
     signal interactionStarted()
     signal interactionEnded()
@@ -78,9 +81,12 @@ Item {
                         return null
                     }
 
-                    if (clipItem.width < 24) {
-                        return clipSmallComp
-                    }
+                    //! NOTE This optimization is disabled, it is probably not needed,
+                    // and if it needs to be enabled, it should be modified, add handlers
+
+                    // if (clipItem.width < 24) {
+                    //     return clipSmallComp
+                    // }
 
                     return clipComp
                 }
@@ -103,6 +109,7 @@ Item {
             ClipItem {
 
                 context: root.context
+                canvas: root.canvas
                 title: clipItem.title
                 clipColor: clipItem.color
                 clipKey: clipItem.key
@@ -111,17 +118,19 @@ Item {
                 leftVisibleMargin: clipItem.leftVisibleMargin
                 rightVisibleMargin: clipItem.rightVisibleMargin
                 collapsed: trackViewState.isTrackCollapsed
+                channelHeightRatio: root.channelHeightRatio
+                showChannelSplitter: isStereo
 
                 onClipMoved: function(deltaX, completed) {
                     clipsModel.moveClip(clipItem.key, deltaX, completed)
                 }
 
-                onClipLeftTrimmed: function(deltaX) {
-                    clipsModel.trimLeftClip(clipItem.key, deltaX)
+                onClipLeftTrimmed: function(deltaX, posOnCanvas) {
+                    clipsModel.trimLeftClip(clipItem.key, deltaX, posOnCanvas)
                 }
 
-                onClipRightTrimmed: function(deltaX) {
-                    clipsModel.trimRightClip(clipItem.key, deltaX)
+                onClipRightTrimmed: function(deltaX, posOnCanvas) {
+                    clipsModel.trimRightClip(clipItem.key, deltaX, posOnCanvas)
                 }
 
                 onClipItemMousePositionChanged: function(xWithinClip, yWithinClip) {
@@ -145,6 +154,10 @@ Item {
 
                 onTitleEditCanceled: {
                     clipsModel.resetSelectedClip()
+                }
+
+                onRatioChanged: function (ratio) {
+                    root.channelHeightRatio = ratio
                 }
             }
         }
@@ -197,11 +210,28 @@ Item {
         }
     }
 
+    ChannelSplitter {
+        id: channelSplitter
+
+        anchors.fill: parent
+        anchors.topMargin: trackViewState.isTrackCollapsed ? 1 : 21
+        anchors.bottomMargin: 3
+
+        channelHeightRatio: root.channelHeightRatio
+        color: "#FFFFFF"
+        opacity: 0.05
+        visible: isStereo
+
+        onRatioChanged: function(ratio) {
+            root.channelHeightRatio = ratio
+        }
+    }
+
     SeparatorLine {
         id: sep
         color: "#FFFFFF"
         opacity: 0.1
         anchors.bottom: parent.bottom
-        separatorWidth: 2
+        thickness: 2
     }
 }

@@ -14,6 +14,8 @@ Rectangle {
     property bool clipHovered: false
     color: ui.theme.backgroundPrimaryColor
 
+    clip: true
+
     TracksListClipsModel {
         id: tracksModel
     }
@@ -148,8 +150,6 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
 
-        clip: true
-
         // anchors.leftMargin: 130
         // anchors.rightMargin: 130
 
@@ -277,6 +277,7 @@ Rectangle {
                 delegate: TrackClipsItem {
                     width: tracksClipsView.width
                     context: timeline.context
+                    canvas: content
                     trackId: model.trackId
                     isDataSelected: model.isDataSelected
 

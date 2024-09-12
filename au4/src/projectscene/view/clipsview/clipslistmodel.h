@@ -26,6 +26,7 @@ class ClipsListModel : public QAbstractListModel, public muse::async::Asyncable,
 
     Q_PROPERTY(TimelineContext * context READ timelineContext WRITE setTimelineContext NOTIFY timelineContextChanged FINAL)
     Q_PROPERTY(QVariant trackId READ trackId WRITE setTrackId NOTIFY trackIdChanged FINAL)
+    Q_PROPERTY(bool isStereo READ isStereo NOTIFY isStereoChanged FINAL)
 
     Q_PROPERTY(int cacheBufferPx READ cacheBufferPx CONSTANT)
 
@@ -43,12 +44,13 @@ public:
     void setTrackId(const QVariant& newTrackId);
     int selectedClipIdx() const;
     void setSelectedClipIdx(int newSelectedClipIdx);
+    bool isStereo() const;
 
     Q_INVOKABLE void init();
     Q_INVOKABLE void reload();
     Q_INVOKABLE bool moveClip(const ClipKey& key, double deltaX, bool completed);
-    Q_INVOKABLE bool trimLeftClip(const ClipKey& key, double deltaX);
-    Q_INVOKABLE bool trimRightClip(const ClipKey& key, double deltaX);
+    Q_INVOKABLE bool trimLeftClip(const ClipKey& key, double deltaX, double posOnCanvas);
+    Q_INVOKABLE bool trimRightClip(const ClipKey& key, double deltaX, double posOnCanvas);
     Q_INVOKABLE void selectClip(const ClipKey& key);
     Q_INVOKABLE void unselectClip(const ClipKey& key);
     Q_INVOKABLE void resetSelectedClip();
@@ -64,6 +66,7 @@ signals:
     void trackIdChanged();
     void timelineContextChanged();
     void selectedClipIdxChanged();
+    void isStereoChanged();
 
     void requestClipTitleEdit(int index);
 
@@ -87,11 +90,13 @@ private:
     void onClipRenameAction(const muse::actions::ActionData& args);
     ClipListItem* itemByKey(const trackedit::ClipKey& k) const;
     int indexByKey(const trackedit::ClipKey& k) const;
+    double calculateExtraAutoScrollShift(double posOnCanvas);
 
     TimelineContext* m_context = nullptr;
     trackedit::TrackId m_trackId = -1;
     muse::async::NotifyList<au::trackedit::Clip> m_allClipList;
     QList<ClipListItem*> m_clipList;
     ClipListItem* m_selectedItem = nullptr;
+    bool m_isStereo = false;
 };
 }

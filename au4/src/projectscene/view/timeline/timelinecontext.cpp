@@ -161,6 +161,23 @@ void TimelineContext::scrollVertical(qreal newPos)
     emit viewContentYChangeRequested(scrollStep* correction);
 }
 
+void TimelineContext::insureVisible(double posSec)
+{
+    constexpr double SCROLL_MARGIN_PX(16);
+    constexpr double AUTO_SHIFT_PERCENT(0.03);
+
+    if (posSec < frameStartTime()) {
+        moveToFrameTime(posSec);
+    } else {
+        // auto shift
+        double endGapPx = zoom() * (frameEndTime() - posSec);
+        if (endGapPx < SCROLL_MARGIN_PX) {
+            double frameTime = frameEndTime() - frameStartTime();
+            shiftFrameTime(frameTime * AUTO_SHIFT_PERCENT);
+        }
+    }
+}
+
 void TimelineContext::onResizeFrameWidth(double frameWidth)
 {
     m_frameWidth = frameWidth;
@@ -576,7 +593,12 @@ void TimelineContext::updateTimeSignature()
 
 qreal TimelineContext::horizontalScrollableSize() const
 {
-    double maxEndTime = std::max(m_lastZoomEndTime, trackEditProject()->totalTime().to_double());
+    auto project = trackEditProject();
+    if (!project) {
+        return 0.0;
+    }
+
+    double maxEndTime = std::max(m_lastZoomEndTime, project->totalTime().to_double());
     return timeToContentPosition(maxEndTime);
 }
 

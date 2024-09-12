@@ -136,12 +136,25 @@ int ClipsListModel::indexByKey(const trackedit::ClipKey& k) const
     return -1;
 }
 
+double ClipsListModel::calculateExtraAutoScrollShift(double posOnCanvas)
+{
+    secs_t posSec = m_context->positionToTime(posOnCanvas);
+    if (!muse::RealIsEqualOrMore(posSec, 0.0)) {
+        posSec = 0.0;
+    }
+    secs_t frameStartBeforeShift = m_context->frameStartTime();
+    m_context->insureVisible(posSec);
+    secs_t frameStartAfterShift = m_context->frameStartTime();
+
+    return (frameStartAfterShift - frameStartBeforeShift) * m_context->zoom();
+}
+
 void ClipsListModel::update()
 {
     //! NOTE First we form a new list, and then we delete old objects,
     //! otherwise there will be errors in Qml
     QList<ClipListItem*> oldList = m_clipList;
-
+    bool isStereo = false;
     beginResetModel();
 
     m_clipList.clear();
@@ -150,13 +163,22 @@ void ClipsListModel::update()
         ClipListItem* item = new ClipListItem(this);
         item->setClip(c);
         m_clipList.append(item);
+        isStereo |= c.stereo;
     }
 
     updateItemsMetrics();
 
+    //! NOTE We need to update the selected item
+    //! to take a pointer to the item from the new list
+    m_selectedItem = nullptr;
     onSelectedClip(selectionController()->selectedClip());
 
     endResetModel();
+
+    if (m_isStereo != isStereo) {
+        m_isStereo = isStereo;
+        emit isStereoChanged();
+    }
 
     muse::async::Async::call(this, [oldList]() {
         qDeleteAll(oldList);
@@ -275,12 +297,14 @@ bool ClipsListModel::moveClip(const ClipKey& key, double deltaX, bool completed)
     return ok;
 }
 
-bool ClipsListModel::trimLeftClip(const ClipKey& key, double deltaX)
+bool ClipsListModel::trimLeftClip(const ClipKey& key, double deltaX, double posOnCanvas)
 {
     ClipListItem* item = itemByKey(key.key);
     IF_ASSERT_FAILED(item) {
         return false;
     }
+
+    deltaX += calculateExtraAutoScrollShift(posOnCanvas);
 
     const secs_t deltaSec = deltaX / m_context->zoom();
 
@@ -288,12 +312,14 @@ bool ClipsListModel::trimLeftClip(const ClipKey& key, double deltaX)
     return ok;
 }
 
-bool ClipsListModel::trimRightClip(const ClipKey& key, double deltaX)
+bool ClipsListModel::trimRightClip(const ClipKey& key, double deltaX, double posOnCanvas)
 {
     ClipListItem* item = itemByKey(key.key);
     IF_ASSERT_FAILED(item) {
         return false;
     }
+
+    deltaX -= calculateExtraAutoScrollShift(posOnCanvas);
 
     const secs_t deltaSec = deltaX / m_context->zoom();
 
@@ -352,6 +378,11 @@ void ClipsListModel::setTrackId(const QVariant& _newTrackId)
     }
     m_trackId = newTrackId;
     emit trackIdChanged();
+}
+
+bool ClipsListModel::isStereo() const
+{
+    return m_isStereo;
 }
 
 TimelineContext* ClipsListModel::timelineContext() const
