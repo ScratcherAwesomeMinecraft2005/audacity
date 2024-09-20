@@ -121,16 +121,24 @@ Item {
                 channelHeightRatio: root.channelHeightRatio
                 showChannelSplitter: isStereo
 
-                onClipMoved: function(deltaX, completed) {
-                    clipsModel.moveClip(clipItem.key, deltaX, completed)
+                onClipStartEditRequested: function() {
+                    clipsModel.startEditClip(clipItem.key)
                 }
 
-                onClipLeftTrimmed: function(deltaX, posOnCanvas) {
-                    clipsModel.trimLeftClip(clipItem.key, deltaX, posOnCanvas)
+                onClipEndEditRequested: function() {
+                    clipsModel.endEditClip(clipItem.key)
                 }
 
-                onClipRightTrimmed: function(deltaX, posOnCanvas) {
-                    clipsModel.trimRightClip(clipItem.key, deltaX, posOnCanvas)
+                onClipMoveRequested: function(completed) {
+                    clipsModel.moveClip(clipItem.key, completed)
+                }
+
+                onClipLeftTrimRequested: function() {
+                    clipsModel.trimLeftClip(clipItem.key)
+                }
+
+                onClipRightTrimRequested: function() {
+                    clipsModel.trimRightClip(clipItem.key)
                 }
 
                 onClipItemMousePositionChanged: function(xWithinClip, yWithinClip) {
@@ -161,7 +169,6 @@ Item {
                 }
             }
         }
-
     }
 
     Rectangle {

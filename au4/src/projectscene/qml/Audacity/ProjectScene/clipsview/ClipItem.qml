@@ -25,9 +25,13 @@ Rectangle {
 
     property bool collapsed: false
 
-    signal clipMoved(real deltaX, bool completed)
-    signal clipLeftTrimmed(real deltaX, real posOnCanvas)
-    signal clipRightTrimmed(real deltaX, real posOnCanvas)
+    signal clipStartEditRequested()
+    signal clipEndEditRequested()
+
+    signal clipMoveRequested(bool completed)
+    signal clipLeftTrimRequested()
+    signal clipRightTrimRequested()
+
     signal requestSelected()
     signal ratioChanged(double val)
 
@@ -120,29 +124,25 @@ Rectangle {
                 cursorShape: Qt.OpenHandCursor
 
                 property bool moveActive: false
-                property real moveLastX: 0.0
 
                 onPositionChanged: function(e) {
                     root.clipItemMousePositionChanged(e.x, e.y)
 
-                    if (headerDragArea.moveActive) {
-                        var gx = mapToGlobal(e.x, e.y).x
-                        root.clipMoved(gx - headerDragArea.moveLastX, false)
-                        headerDragArea.moveLastX = gx
+                    if (pressed) {
+                        root.clipMoveRequested(false)
                     }
                 }
 
                 onPressed: function(e) {
                     root.requestSelected()
 
-                    headerDragArea.moveLastX = mapToGlobal(e.x, e.y).x
-                    headerDragArea.moveActive = true
+                    root.clipStartEditRequested()
                 }
 
                 onReleased: function(e) {
-                    var gx = mapToGlobal(e.x, e.y).x
-                    root.clipMoved(gx - headerDragArea.moveLastX, true)
-                    headerDragArea.moveActive = false
+                    root.clipMoveRequested(true)
+
+                    root.clipEndEditRequested()
                 }
 
                 onDoubleClicked: root.editTitle()
@@ -291,12 +291,20 @@ Rectangle {
             clipItemMousePositionChanged(xWithinClipItem, yWithinClipItem)
         }
 
-        onTrimLeftBy: function(trimByX, posOnCanvas) {
-            clipLeftTrimmed(trimByX, posOnCanvas)
+        onClipStartEditRequested: function() {
+            root.clipStartEditRequested()
         }
 
-        onTrimRightBy: function(trimByX, posOnCanvas) {
-            clipRightTrimmed(trimByX, posOnCanvas)
+        onClipEndEditRequested: function() {
+            root.clipEndEditRequested()
+        }
+
+        onTrimLeftRequested: function() {
+            root.clipLeftTrimRequested()
+        }
+
+        onTrimRightRequested: function() {
+            root.clipRightTrimRequested()
         }
     }
 
