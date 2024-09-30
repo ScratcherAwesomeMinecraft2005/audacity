@@ -100,7 +100,7 @@ protected:
    static const EnumValueSymbol kActionStrings[nActions];
 
    static constexpr EffectParameter Threshold {
-      &TruncSilenceBase::mThresholdDB, L"Threshold", -20.0, -80.0, -20.0, 1
+      &TruncSilenceBase::mThresholdDB, L"Threshold", -20.0, -145.0, -6.0, 1
    };
    static constexpr EnumParameter ActIndex { &TruncSilenceBase::mActionIndex,
                                              L"Action",
