@@ -3,6 +3,7 @@
 */
 #include "trackeditactionscontroller.h"
 #include "project/internal/audacityproject.h"
+#include "translation.h"
 
 using namespace muse;
 using namespace au::trackedit;
@@ -10,9 +11,13 @@ using namespace muse::async;
 using namespace muse::actions;
 
 static const ActionCode COPY_CODE("copy");
+static const ActionCode CUT_CODE("cut");
 static const ActionCode DELETE_CODE("delete");
+static const ActionCode SPLIT_CUT_CODE("split-cut");
+static const ActionCode SPLIT_DELETE_CODE("split-delete");
 static const ActionCode SPLIT_CODE("split");
 static const ActionCode JOIN_CODE("join");
+static const ActionCode DUPLICATE_CODE("duplicate");
 
 static const ActionCode CLIP_CUT_CODE("clip-cut");
 static const ActionCode CLIP_COPY_CODE("clip-copy");
@@ -24,6 +29,12 @@ static const ActionCode PASTE("paste");
 static const ActionCode TRACK_SPLIT("track-split");
 static const ActionCode TRACK_SPLIT_AT("track-split-at");
 static const ActionCode MERGE_SELECTED_ON_TRACK("merge-selected-on-tracks");
+static const ActionCode DUPLICATE_SELECTED("duplicate-selected");
+static const ActionCode DUPLICATE_CLIP("duplicate-clip");
+static const ActionCode CLIP_SPLIT_CUT("clip-split-cut");
+static const ActionCode CLIP_SPLIT_DELETE("clip-split-delete");
+static const ActionCode SPLIT_CUT_SELECTED("split-cut-selected");
+static const ActionCode SPLIT_DELETE_SELECTED("split-delete-selected");
 static const ActionCode NEW_MONO_TRACK("new-mono-track");
 static const ActionCode NEW_STEREO_TRACK("new-stereo-track");
 static const ActionCode NEW_LABEL_TRACK("new-label-track");
@@ -31,12 +42,19 @@ static const ActionCode NEW_LABEL_TRACK("new-label-track");
 static const ActionCode TRIM_AUDIO_OUTSIDE_SELECTION("trim-audio-outside-selection");
 static const ActionCode SILENCE_AUDIO_SELECTION("silence-audio-selection");
 
+static const ActionCode UNDO("undo");
+static const ActionCode REDO("redo");
+
 void TrackeditActionsController::init()
 {
     dispatcher()->reg(this, COPY_CODE, this, &TrackeditActionsController::doGlobalCopy);
+    dispatcher()->reg(this, CUT_CODE, this, &TrackeditActionsController::doGlobalCut);
     dispatcher()->reg(this, DELETE_CODE, this, &TrackeditActionsController::doGlobalDelete);
+    dispatcher()->reg(this, SPLIT_CUT_CODE, this, &TrackeditActionsController::doGlobalSplitCut);
+    dispatcher()->reg(this, SPLIT_DELETE_CODE, this, &TrackeditActionsController::doGlobalSplitDelete);
     dispatcher()->reg(this, SPLIT_CODE, this, &TrackeditActionsController::doGlobalSplit);
     dispatcher()->reg(this, JOIN_CODE, this, &TrackeditActionsController::doGlobalJoin);
+    dispatcher()->reg(this, DUPLICATE_CODE, this, &TrackeditActionsController::doGlobalDuplicate);
 
     dispatcher()->reg(this, CLIP_CUT_CODE, this, &TrackeditActionsController::clipCut);
     dispatcher()->reg(this, CLIP_COPY_CODE, this, &TrackeditActionsController::clipCopy);
@@ -48,6 +66,14 @@ void TrackeditActionsController::init()
     dispatcher()->reg(this, TRACK_SPLIT, this, &TrackeditActionsController::trackSplit);
     dispatcher()->reg(this, TRACK_SPLIT_AT, this, &TrackeditActionsController::trackSplitAt);
     dispatcher()->reg(this, MERGE_SELECTED_ON_TRACK, this, &TrackeditActionsController::mergeSelectedOnTrack);
+    dispatcher()->reg(this, UNDO, this, &TrackeditActionsController::undo);
+    dispatcher()->reg(this, REDO, this, &TrackeditActionsController::redo);
+    dispatcher()->reg(this, DUPLICATE_SELECTED, this, &TrackeditActionsController::duplicateSelected);
+    dispatcher()->reg(this, DUPLICATE_CLIP, this, &TrackeditActionsController::duplicateClip);
+    dispatcher()->reg(this, CLIP_SPLIT_CUT, this, &TrackeditActionsController::clipSplitCut);
+    dispatcher()->reg(this, CLIP_SPLIT_DELETE, this, &TrackeditActionsController::clipSplitDelete);
+    dispatcher()->reg(this, SPLIT_CUT_SELECTED, this, &TrackeditActionsController::splitCutSelected);
+    dispatcher()->reg(this, SPLIT_DELETE_SELECTED, this, &TrackeditActionsController::splitDeleteSelected);
     dispatcher()->reg(this, "toggle-loop-region", this, &TrackeditActionsController::toggleLoopRegion);
     dispatcher()->reg(this, "clear-loop-region", this, &TrackeditActionsController::clearLoopRegion);
     dispatcher()->reg(this, "set-loop-region-to-selection", this, &TrackeditActionsController::setLoopRegionToSelection);
@@ -80,6 +106,19 @@ void TrackeditActionsController::doGlobalCopy()
     }
 }
 
+void TrackeditActionsController::doGlobalCut()
+{
+    if (selectionController()->isDataSelected()) {
+        dispatcher()->dispatch(CLIP_CUT_SELECTED_CODE);
+        return;
+    }
+
+    ClipKey selectedClipKey = selectionController()->selectedClip();
+    if (selectedClipKey.isValid()) {
+        dispatcher()->dispatch(CLIP_CUT_CODE, ActionData::make_arg1<trackedit::ClipKey>(selectedClipKey));
+    }
+}
+
 void TrackeditActionsController::doGlobalDelete()
 {
     if (selectionController()->isDataSelected()) {
@@ -91,6 +130,48 @@ void TrackeditActionsController::doGlobalDelete()
     if (selectedClipKey.isValid()) {
         dispatcher()->dispatch(CLIP_DELETE_CODE, ActionData::make_arg1<trackedit::ClipKey>(selectedClipKey));
     }
+}
+
+void TrackeditActionsController::doGlobalSplitCut()
+{
+    if (selectionController()->isDataSelected()) {
+        auto selectedTracks = selectionController()->dataSelectedOnTracks();
+        secs_t selectedStartTime = selectionController()->dataSelectedStartTime();
+        secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
+
+        dispatcher()->dispatch(SPLIT_CUT_SELECTED,
+                           ActionData::make_arg3<std::vector<TrackId>, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+        return;
+    }
+
+    ClipKey selectedClipKey = selectionController()->selectedClip();
+    if (selectedClipKey.isValid()) {
+        dispatcher()->dispatch(CLIP_SPLIT_CUT, ActionData::make_arg1<trackedit::ClipKey>(selectedClipKey));
+        return;
+    }
+
+    interactive()->error(muse::trc("no_audio", "No audio selected"), std::string("Select the audio for Split Cut to use then try again."));
+}
+
+void TrackeditActionsController::doGlobalSplitDelete()
+{
+    if (selectionController()->isDataSelected()) {
+        auto selectedTracks = selectionController()->dataSelectedOnTracks();
+        secs_t selectedStartTime = selectionController()->dataSelectedStartTime();
+        secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
+
+        dispatcher()->dispatch(SPLIT_DELETE_SELECTED,
+                           ActionData::make_arg3<std::vector<TrackId>, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+        return;
+    }
+
+    ClipKey selectedClipKey = selectionController()->selectedClip();
+    if (selectedClipKey.isValid()) {
+        dispatcher()->dispatch(CLIP_SPLIT_DELETE, ActionData::make_arg1<trackedit::ClipKey>(selectedClipKey));
+        return;
+    }
+
+    interactive()->error(muse::trc("no_audio", "No audio selected"), std::string("Select the audio for Split Cut to use then try again."));
 }
 
 void TrackeditActionsController::doGlobalSplit()
@@ -119,9 +200,44 @@ void TrackeditActionsController::doGlobalJoin()
                            ActionData::make_arg3<std::vector<TrackId>, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
 }
 
-void TrackeditActionsController::clipCut()
+void TrackeditActionsController::undo()
 {
-    NOT_IMPLEMENTED;
+    trackeditInteraction()->undo();
+}
+
+void TrackeditActionsController::redo()
+{
+    trackeditInteraction()->redo();
+}
+
+void TrackeditActionsController::doGlobalDuplicate()
+{
+    auto selectedTracks = selectionController()->dataSelectedOnTracks();
+
+    if (!selectedTracks.empty()) {
+        secs_t selectedStartTime = selectionController()->dataSelectedStartTime();
+        secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
+
+        dispatcher()->dispatch(DUPLICATE_SELECTED,
+                               ActionData::make_arg3<std::vector<TrackId>, secs_t, secs_t>(selectedTracks, selectedStartTime, selectedEndTime));
+    } else {
+        ClipKey selectedClipKey = selectionController()->selectedClip();
+        if (!selectedClipKey.isValid()) {
+            return;
+        }
+        dispatcher()->dispatch(DUPLICATE_CLIP, ActionData::make_arg1<ClipKey>(selectedClipKey));
+    }
+}
+
+void TrackeditActionsController::clipCut(const ActionData& args)
+{
+    ClipKey clipKey = args.arg<ClipKey>(0);
+    if (!clipKey.isValid()) {
+        return;
+    }
+
+    trackeditInteraction()->clearClipboard();
+    trackeditInteraction()->cutClipIntoClipboard(clipKey);
 }
 
 void TrackeditActionsController::clipCopy(const ActionData& args)
@@ -151,7 +267,15 @@ void TrackeditActionsController::clipDelete(const ActionData& args)
 
 void TrackeditActionsController::clipCutSelected()
 {
-    NOT_IMPLEMENTED;
+    project::IAudacityProjectPtr project = globalContext()->currentProject();
+    auto selectedTracks = selectionController()->dataSelectedOnTracks();
+    secs_t selectedStartTime = selectionController()->dataSelectedStartTime();
+    secs_t selectedEndTime = selectionController()->dataSelectedEndTime();
+
+    trackeditInteraction()->clearClipboard();
+    trackeditInteraction()->cutClipDataIntoClipboard(selectedTracks, selectedStartTime, selectedEndTime);
+
+    selectionController()->resetDataSelection();
 }
 
 void TrackeditActionsController::clipCopySelected()
@@ -203,6 +327,7 @@ void TrackeditActionsController::clipDeleteSelected()
     }
 
     pushProjectHistoryDeleteState(start, duration);
+    selectionController()->resetDataSelection();
 }
 
 void TrackeditActionsController::paste()
@@ -267,6 +392,101 @@ void TrackeditActionsController::mergeSelectedOnTrack(const muse::actions::Actio
     secs_t duration = end - begin;
 
     trackeditInteraction()->mergeSelectedOnTracks(tracksIds, begin, end);
+}
+
+void TrackeditActionsController::duplicateSelected(const muse::actions::ActionData &args)
+{
+    IF_ASSERT_FAILED(args.count() == 3) {
+        return;
+    }
+
+    std::vector<TrackId> tracksIds = args.arg<std::vector<TrackId>>(0);
+    if (tracksIds.empty()) {
+        return;
+    }
+
+    secs_t begin = args.arg<secs_t>(1);
+    secs_t end = args.arg<secs_t>(2);
+
+    trackeditInteraction()->duplicateSelectedOnTracks(tracksIds, begin, end);
+}
+
+void TrackeditActionsController::duplicateClip(const muse::actions::ActionData &args)
+{
+    IF_ASSERT_FAILED(args.count() == 1) {
+        return;
+    }
+
+    ClipKey clipKey = args.arg<ClipKey>(0);
+    trackeditInteraction()->duplicateClip(clipKey);
+}
+
+void TrackeditActionsController::clipSplitCut(const muse::actions::ActionData &args)
+{
+    IF_ASSERT_FAILED(args.count() == 1) {
+        return;
+    }
+
+    ClipKey clipKey = args.arg<ClipKey>(0);
+    if (!clipKey.isValid()) {
+        return;
+    }
+
+    trackeditInteraction()->clearClipboard();
+    trackeditInteraction()->clipSplitCut(clipKey);
+}
+
+void TrackeditActionsController::clipSplitDelete(const muse::actions::ActionData &args)
+{
+    IF_ASSERT_FAILED(args.count() == 1) {
+        return;
+    }
+
+    ClipKey clipKey = args.arg<ClipKey>(0);
+    if (!clipKey.isValid()) {
+        return;
+    }
+
+    trackeditInteraction()->clipSplitDelete(clipKey);
+}
+
+void TrackeditActionsController::splitCutSelected(const muse::actions::ActionData &args)
+{
+    IF_ASSERT_FAILED(args.count() == 3) {
+        return;
+    }
+
+    std::vector<TrackId> tracksIds = args.arg<std::vector<TrackId>>(0);
+    if (tracksIds.empty()) {
+        return;
+    }
+
+    secs_t begin = args.arg<secs_t>(1);
+    secs_t end = args.arg<secs_t>(2);
+
+    trackeditInteraction()->clearClipboard();
+    trackeditInteraction()->splitCutSelectedOnTracks(tracksIds, begin, end);
+
+    selectionController()->resetDataSelection();
+}
+
+void TrackeditActionsController::splitDeleteSelected(const muse::actions::ActionData &args)
+{
+    IF_ASSERT_FAILED(args.count() == 3) {
+        return;
+    }
+
+    std::vector<TrackId> tracksIds = args.arg<std::vector<TrackId>>(0);
+    if (tracksIds.empty()) {
+        return;
+    }
+
+    secs_t begin = args.arg<secs_t>(1);
+    secs_t end = args.arg<secs_t>(2);
+
+    trackeditInteraction()->splitDeleteSelectedOnTracks(tracksIds, begin, end);
+
+    selectionController()->resetDataSelection();
 }
 
 void TrackeditActionsController::toggleLoopRegion()
@@ -356,49 +576,36 @@ void TrackeditActionsController::silenceAudioSelection()
 
 void TrackeditActionsController::pushProjectHistoryTrackAddedState()
 {
-    project::IAudacityProjectPtr project = globalContext()->currentProject();
-    auto trackeditProject = project->trackeditProject();
-    trackeditProject->pushHistoryState("Created new audio track", "New track");
+    projectHistory()->pushHistoryState("Created new audio track", "New track");
 }
 
 void TrackeditActionsController::pushProjectHistoryTrackTrimState(secs_t start, secs_t end)
 {
-    project::IAudacityProjectPtr project = globalContext()->currentProject();
-    auto trackeditProject = project->trackeditProject();
-
     std::stringstream ss;
     ss << "Trim selected audio tracks from " << start << " seconds to " << end << " seconds";
 
-    trackeditProject->pushHistoryState(ss.str(), "Trim Audio");
+    projectHistory()->pushHistoryState(ss.str(), "Trim Audio");
 }
 
 void TrackeditActionsController::pushProjectHistoryTrackSilenceState(secs_t start, secs_t end)
 {
-    project::IAudacityProjectPtr project = globalContext()->currentProject();
-    auto trackeditProject = project->trackeditProject();
-
     std::stringstream ss;
     ss << "Silenced selected tracks for " << start << " seconds at " << end << "";
 
-    trackeditProject->pushHistoryState(ss.str(), "Silence");
+    projectHistory()->pushHistoryState(ss.str(), "Silence");
 }
 
 void TrackeditActionsController::pushProjectHistoryPasteState()
 {
-    project::IAudacityProjectPtr project = globalContext()->currentProject();
-    auto trackeditProject = project->trackeditProject();
-    trackeditProject->pushHistoryState("Pasted from the clipboard", "Paste");
+    projectHistory()->pushHistoryState("Pasted from the clipboard", "Paste");
 }
 
 void TrackeditActionsController::pushProjectHistoryDeleteState(secs_t start, secs_t duration)
 {
-    project::IAudacityProjectPtr project = globalContext()->currentProject();
-    auto trackeditProject = project->trackeditProject();
-
     std::stringstream ss;
     ss << "Delete " << duration << " seconds at " << start;
 
-    trackeditProject->pushHistoryState(ss.str(), "Delete");
+    projectHistory()->pushHistoryState(ss.str(), "Delete");
 }
 
 bool TrackeditActionsController::actionChecked(const ActionCode& actionCode) const

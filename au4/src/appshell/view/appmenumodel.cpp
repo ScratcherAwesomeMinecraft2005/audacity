@@ -113,6 +113,15 @@ void AppMenuModel::setupConnections()
     //     workspacesItem.setSubitems(makeWorkspacesItems());
     // });
 
+    uiActionsRegister()->actionsChanged().onReceive(this, [this](const ui::UiActionList& acts) {
+        for (const UiAction& act : acts) {
+            MenuItem& item = findItem(act.code);
+            if (item.isValid()) {
+                item.setAction(act);
+            }
+        }
+    });
+
     effectsProvider()->effectMetaListChanged().onNotify(this, [this]() {
         MenuItem& effectsItem = findMenu("menu-effect");
         effectsItem.setSubitems(makeEffectsItems());
@@ -170,15 +179,15 @@ MenuItem* AppMenuModel::makeEditMenu()
         makeMenuItem("undo"),
         makeMenuItem("redo"),
         makeSeparator(),
-        makeMenuItem("clip-cut-selected"),
+        makeMenuItem("cut"),
         makeMenuItem("copy"),
         makeMenuItem("paste"),
         makeMenuItem("delete"),
         makeSeparator(),
-        makeMenuItem("cut-and-close-gap"),
+        makeMenuItem("split-cut"),
         makeMenuItem("duplicate"),
         makeMenuItem("insert"),
-        makeMenuItem("delete-and-close-gap"),
+        makeMenuItem("split-delete"),
         makeSeparator(),
         makeMenu(TranslatableString("appshell/menu/clip", "Clip"), makeClipItems(), "menu-clip"),
         makeMenuItem("silence-audio"),
@@ -282,8 +291,6 @@ MenuItem* AppMenuModel::makeGenerateMenu()
     MenuItemList generateItems {
         makeMenuItem("generate-plugin-manager"),
         makeSeparator(),
-        makeMenuItem("repeat-last-generator"),
-        makeSeparator(),
         makeMenuItem("generate-omitted"),
     };
 
@@ -300,8 +307,6 @@ MenuItem* AppMenuModel::makeAnalyzeMenu()
     MenuItemList analyzeItems {
         makeMenuItem("analyze-plugin-manager"),
         makeSeparator(),
-        makeMenuItem("repeat-last-analyzer"),
-        makeSeparator(),
         makeMenuItem("contrast-analyzer"),
         makeMenuItem("plot-spectrum"),
         makeMenuItem("analyzer-omitted"),
@@ -314,8 +319,6 @@ MenuItem* AppMenuModel::makeToolsMenu()
 {
     MenuItemList toolsItems {
         makeMenuItem("tools-plugin-manager"),
-        makeSeparator(),
-        makeMenuItem("repeat-last-tool"),
         makeSeparator(),
         makeMenuItem("manage-macros"),
         makeMenu(TranslatableString("appshell/menu/macros", "&Macros"), makeMacrosItems(), "menu-macros"),

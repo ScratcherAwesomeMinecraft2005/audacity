@@ -7,7 +7,7 @@
 
 #include "libraries/lib-effects/Effect.h"
 #include "libraries/lib-components/EffectInterface.h"
-#include "libraries/lib-audacity-application-logic/EffectManager.h"
+#include "libraries/lib-effects/EffectManager.h"
 #include "libraries/lib-wave-track/WaveTrack.h"
 #include "libraries/lib-transactions/TransactionScope.h"
 
@@ -78,7 +78,7 @@ muse::async::Notification EffectsProvider::effectMetaListChanged() const
 EffectCategoryList EffectsProvider::effectsCategoryList() const
 {
     EffectCategoryList list;
-    list.push_back({ BUILTIN_CATEGORY_ID, muse::mtrc("effects", "Build-in") });
+    list.push_back({ BUILTIN_CATEGORY_ID, muse::mtrc("effects", "Built-in") });
     if (isVstSupported()) {
         list.push_back({ VST_CATEGORY_ID, muse::mtrc("effects", "VST") });
     }

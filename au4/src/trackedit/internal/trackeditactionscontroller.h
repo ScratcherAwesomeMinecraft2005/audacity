@@ -3,6 +3,7 @@
 */
 #pragma once
 
+#include "iprojecthistory.h"
 #include "itrackeditinteraction.h"
 #include "iselectioncontroller.h"
 #include "modularity/ioc.h"
@@ -22,6 +23,7 @@ class TrackeditActionsController : public ITrackeditActionsController, public mu
     muse::Inject<muse::IInteractive> interactive;
     muse::Inject<trackedit::ISelectionController> selectionController;
     muse::Inject<trackedit::ITrackeditInteraction> trackeditInteraction;
+    muse::Inject<trackedit::IProjectHistory> projectHistory;
 
 public:
     void init();
@@ -33,12 +35,19 @@ public:
 private:
     void notifyActionCheckedChanged(const muse::actions::ActionCode& actionCode);
 
+    void undo();
+    void redo();
+
     void doGlobalCopy();
+    void doGlobalCut();
     void doGlobalDelete();
+    void doGlobalSplitCut();
+    void doGlobalSplitDelete();
     void doGlobalSplit();
     void doGlobalJoin();
+    void doGlobalDuplicate();
 
-    void clipCut();
+    void clipCut(const muse::actions::ActionData &args);
     void clipCopy(const muse::actions::ActionData &args);
     void clipDelete(const muse::actions::ActionData& args);
 
@@ -51,6 +60,12 @@ private:
     void trackSplit(const muse::actions::ActionData &args);
     void trackSplitAt(const muse::actions::ActionData &args);
     void mergeSelectedOnTrack(const muse::actions::ActionData &args);
+    void duplicateSelected(const muse::actions::ActionData &args);
+    void duplicateClip(const muse::actions::ActionData &args);
+    void clipSplitCut(const muse::actions::ActionData &args);
+    void clipSplitDelete(const muse::actions::ActionData &args);
+    void splitCutSelected(const muse::actions::ActionData &args);
+    void splitDeleteSelected(const muse::actions::ActionData &args);
 
     void toggleLoopRegion();
     void clearLoopRegion();

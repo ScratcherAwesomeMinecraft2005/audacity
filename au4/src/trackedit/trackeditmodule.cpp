@@ -29,6 +29,8 @@
 #include "internal/au3/au3trackeditproject.h"
 #include "internal/au3/au3interaction.h"
 #include "internal/au3/au3selectioncontroller.h"
+#include "internal/au3/au3projecthistory.h"
+#include "internal/au3/au3trackeditclipboard.h"
 
 #include "ui/iuiactionsregister.h"
 
@@ -52,6 +54,8 @@ void TrackeditModule::registerExports()
     ioc()->registerExport<ITrackeditProjectCreator>(moduleName(), new Au3TrackeditProjectCreator());
     ioc()->registerExport<ITrackeditInteraction>(moduleName(), new Au3Interaction());
     ioc()->registerExport<ISelectionController>(moduleName(), new Au3SelectionController());
+    ioc()->registerExport<IProjectHistory>(moduleName(), new Au3ProjectHistory());
+    ioc()->registerExport<ITrackeditClipboard>(moduleName(), new Au3TrackeditClipboard());
 }
 
 void TrackeditModule::resolveImports()

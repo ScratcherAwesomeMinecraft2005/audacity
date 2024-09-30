@@ -13,6 +13,7 @@ Item {
     property var canvas: null
 
     property bool isDataSelected: false
+    property bool isTrackSelected: false
     property bool isStereo: clipsModel.isStereo
     property double channelHeightRatio: isStereo ? 0.5 : 1
 
@@ -176,11 +177,11 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         color: "#8EC9FF"
-        opacity: 0.4
+        opacity: 0.1
         visible: root.isDataSelected
 
-        x: root.context.timeToPosition(root.context.selectionStartTime)
-        width: root.context.timeToPosition(root.context.selectionEndTime) - x
+        x: root.context.selectionStartPosition
+        width: root.context.selectionEndPosition - x
         z: 1
     }
 
@@ -190,7 +191,7 @@ Item {
         anchors.fill: parent
         color: "#FFFFFF"
         opacity: 0.05
-        visible: root.isDataSelected
+        visible: root.isDataSelected || root.isTrackSelected
     }
 
     MouseArea {

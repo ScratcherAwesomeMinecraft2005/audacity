@@ -32,6 +32,8 @@ public:
     virtual bool changeClipTitle(const ClipKey& clipKey, const muse::String& newTitle) = 0;
     virtual void clearClipboard() = 0;
     virtual bool pasteFromClipboard(secs_t begin, TrackId trackId) = 0;
+    virtual bool cutClipIntoClipboard(const ClipKey& clipKey) = 0;
+    virtual bool cutClipDataIntoClipboard(const std::vector<TrackId>& tracksIds, secs_t begin, secs_t end) = 0;
     virtual bool copyClipIntoClipboard(const ClipKey& clipKey) = 0;
     virtual bool copyClipDataIntoClipboard(const ClipKey& clipKey, secs_t begin, secs_t end) = 0;
     virtual bool copyTrackDataIntoClipboard(const TrackId trackId, secs_t begin, secs_t end) = 0;
@@ -39,11 +41,19 @@ public:
     virtual bool removeClipData(const ClipKey& clipKey, secs_t begin, secs_t end) = 0;
     virtual bool splitAt(const TrackId trackId, secs_t pivot) = 0;
     virtual bool mergeSelectedOnTracks(const std::vector<TrackId> tracksIds, secs_t begin, secs_t end) = 0;
+    virtual bool duplicateSelectedOnTracks(const std::vector<TrackId> tracksIds, secs_t begin, secs_t end) = 0;
+    virtual bool duplicateClip(const ClipKey& clipKey) = 0;
+    virtual bool clipSplitCut(const ClipKey& clipKey) = 0;
+    virtual bool clipSplitDelete(const ClipKey& clipKey) = 0;
+    virtual bool splitCutSelectedOnTracks(const std::vector<TrackId> tracksIds, secs_t begin, secs_t end) = 0;
+    virtual bool splitDeleteSelectedOnTracks(const std::vector<TrackId> tracksIds, secs_t begin, secs_t end) = 0;
     virtual bool trimClipLeft(const ClipKey& clipKey, secs_t deltaSec) = 0;
     virtual bool trimClipRight(const ClipKey& clipKey, secs_t deltaSec) = 0;
     virtual void newMonoTrack() = 0;
     virtual void newStereoTrack() = 0;
     virtual void newLabelTrack() = 0;
     virtual secs_t clipDuration(const ClipKey& clipKey) const = 0;
+    virtual void undo() = 0;
+    virtual void redo() = 0;
 };
 }

@@ -83,24 +83,6 @@ const UiActionList ProjectUiActions::m_actions = {
              ),
 
     // edit menu
-    UiAction("undo",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "&Undo"),
-             TranslatableString("action", "Undo")
-             ),
-    UiAction("redo",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "&Redo"),
-             TranslatableString("action", "Redo")
-             ),
-    UiAction("cut-and-close-gap",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Cut and close gap"),
-             TranslatableString("action", "Cut and close gap")
-             ),
     UiAction("duplicate",
              au::context::UiCtxAny,
              au::context::CTX_ANY,
@@ -112,12 +94,6 @@ const UiActionList ProjectUiActions::m_actions = {
              au::context::CTX_ANY,
              TranslatableString("action", "Insert"),
              TranslatableString("action", "Insert")
-             ),
-    UiAction("delete-and-close-gap",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Delete and close gap"),
-             TranslatableString("action", "Delete and close gap")
              ),
     UiAction("rename-clip",
              au::context::UiCtxAny,
@@ -518,12 +494,6 @@ const UiActionList ProjectUiActions::m_actions = {
              TranslatableString("action", "Plugin manager"),
              TranslatableString("action", "Plugin manager")
              ),
-    UiAction("repeat-last-generator",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Repeat last generator"),
-             TranslatableString("action", "Repeat last generator")
-             ),
     UiAction("generate-omitted",
              au::context::UiCtxAny,
              au::context::CTX_ANY,
@@ -543,12 +513,6 @@ const UiActionList ProjectUiActions::m_actions = {
              au::context::CTX_ANY,
              TranslatableString("action", "Add realtime effects"),
              TranslatableString("action", "Add realtime effects")
-             ),
-    UiAction("repeat-last-effect",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Repeat last effect"),
-             TranslatableString("action", "Repeat last effect")
              ),
     UiAction("favourite-effect-1",
              au::context::UiCtxAny,
@@ -582,12 +546,6 @@ const UiActionList ProjectUiActions::m_actions = {
              TranslatableString("action", "Plugin manager"),
              TranslatableString("action", "Plugin manager")
              ),
-    UiAction("repeat-last-analyzer",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Repeat last analyzer"),
-             TranslatableString("action", "Repeat last analyzer")
-             ),
     UiAction("contrast-analyzer",
              au::context::UiCtxAny,
              au::context::CTX_ANY,
@@ -613,12 +571,6 @@ const UiActionList ProjectUiActions::m_actions = {
              au::context::CTX_ANY,
              TranslatableString("action", "Plugin manager"),
              TranslatableString("action", "Plugin manager")
-             ),
-    UiAction("repeat-last-tool",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Repeat last tool"),
-             TranslatableString("action", "Repeat last tool")
              ),
     UiAction("manage-macros",
              au::context::UiCtxAny,

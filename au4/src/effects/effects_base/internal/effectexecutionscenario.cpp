@@ -15,7 +15,7 @@
 #include "libraries/lib-project-rate/ProjectRate.h"
 #include "libraries/lib-time-frequency-selection/ViewInfo.h"
 #include "libraries/lib-menus/CommandManager.h"
-#include "libraries/lib-audacity-application-logic/EffectManager.h"
+#include "libraries/lib-effects/EffectManager.h"
 #include "libraries/lib-project-history/ProjectHistory.h"
 #include "libraries/lib-transactions/TransactionScope.h"
 #include "libraries/lib-module-manager/ConfigInterface.h"
@@ -30,8 +30,22 @@ static const int UNDEFINED_FREQUENCY = -1;
 
 muse::Ret EffectExecutionScenario::performEffect(const EffectId& effectId)
 {
-    AudacityProject& project = *reinterpret_cast<::AudacityProject*>(globalContext()->currentProject()->au3ProjectPtr());
+    AudacityProject& project = projectRef();
     return doPerformEffect(project, effectId, 0);
+}
+
+AudacityProject& EffectExecutionScenario::projectRef()
+{
+    return *reinterpret_cast<::AudacityProject*>(globalContext()->currentProject()->au3ProjectPtr());
+}
+
+muse::Ret EffectExecutionScenario::repeatLastProcessor()
+{
+    IF_ASSERT_FAILED(m_lastProcessorId) {
+        return muse::make_ret(Ret::Code::UnknownError);
+    }
+    AudacityProject& project = projectRef();
+    return doPerformEffect(project, *m_lastProcessorId, EffectManager::kConfigured);
 }
 
 muse::Ret EffectExecutionScenario::doPerformEffect(AudacityProject& project, const EffectId& effectId, unsigned flags)
@@ -68,13 +82,6 @@ muse::Ret EffectExecutionScenario::doPerformEffect(AudacityProject& project, con
         }
 
         isSelection = selectedRegion.t1() > selectedRegion.t0();
-        if (flags & EffectManager::kConfigured) {
-            // Don't Select All if repeating Generator Effect
-            if (!(flags & EffectManager::kConfigured)) {
-                //! TODO
-                // DO selectAllIfNone;
-            }
-        }
 
         //! TODO Should we do something if there is no selection and the effect is not a generator? Maybe add a check... or automatically select all...
 
@@ -281,48 +288,33 @@ muse::Ret EffectExecutionScenario::doPerformEffect(AudacityProject& project, con
             ProjectHistory::Get(project).PushState(longDesc, shortDesc);
         }
 
-        //! NOTE Step 8.2 - remember a successful generator, effect, analyzer, or tool Process
-
-        if (!(flags & EffectManager::kDontRepeatLast)) {
-            auto& commandManager = CommandManager::Get(project);
-            EffectType type = effect->GetType();
-
-            // Remember a successful generator, effect, analyzer, or tool Process
-            auto shortDesc = PluginManager::Get().GetName(ID);
-            /* i18n-hint: %s will be the name of the effect which will be
-           * repeated if this menu item is chosen */
-            auto lastEffectDesc = XO("Repeat %s").Format(shortDesc);
-            switch (type) {
-            case EffectTypeGenerate:
-                commandManager.Modify(wxT("RepeatLastGenerator"), lastEffectDesc);
-                commandManager.mLastGenerator = ID;
-                commandManager.mRepeatGeneratorFlags = EffectManager::kConfigured;
-                break;
-            case EffectTypeProcess:
-                commandManager.Modify(wxT("RepeatLastEffect"), lastEffectDesc);
-                commandManager.mLastEffect = ID;
-                commandManager.mRepeatEffectFlags = EffectManager::kConfigured;
-                break;
-            case EffectTypeAnalyze:
-                commandManager.Modify(wxT("RepeatLastAnalyzer"), lastEffectDesc);
-                commandManager.mLastAnalyzer = ID;
-                commandManager.mLastAnalyzerRegistration = CommandManager::repeattypeplugin;
-                commandManager.mRepeatAnalyzerFlags = EffectManager::kConfigured;
-                break;
-            case EffectTypeTool:
-                commandManager.Modify(wxT("RepeatLastTool"), lastEffectDesc);
-                commandManager.mLastTool = ID;
-                commandManager.mLastToolRegistration = CommandManager::repeattypeplugin;
-                commandManager.mRepeatToolFlags = EffectManager::kConfigured;
-                if (shortDesc == NYQUIST_PROMPT_NAME) {
-                    commandManager.mRepeatToolFlags =EffectManager::kRepeatNyquistPrompt; // Nyquist Prompt is not configured
+        //! NOTE Step 8.2 - remember a successful effect
+        if (!(flags & EffectManager::kDontRepeatLast) && effect->GetType() == EffectTypeProcess) {
+            if (m_lastProcessorId != effectId) {
+                const auto firstTime = !m_lastProcessorId.has_value();
+                m_lastProcessorId = effectId;
+                m_lastProcessorIdChanged.send(effectId);
+                if (firstTime) {
+                    m_lastProcessorIsAvailableChanged.notify();
                 }
-                break;
             }
         }
-
-        //! TODO There should probably be a saving of commandManager here, but it is not explicitly there.
     }
 
     return true;
+}
+
+bool EffectExecutionScenario::lastProcessorIsAvailable() const
+{
+    return m_lastProcessorId.has_value();
+}
+
+muse::async::Notification EffectExecutionScenario::lastProcessorIsNowAvailable() const
+{
+    return m_lastProcessorIsAvailableChanged;
+}
+
+muse::async::Channel<EffectId> EffectExecutionScenario::lastProcessorIdChanged() const
+{
+    return m_lastProcessorIdChanged;
 }

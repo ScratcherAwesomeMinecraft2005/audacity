@@ -50,6 +50,13 @@ const UiActionList TrackeditUiActions::m_actions = {
              TranslatableString("action", "Set loop region out"),
              TranslatableString("action", "Set loop region out")
              ),
+    UiAction("cut",
+             au::context::UiCtxProjectFocused,
+             au::context::CTX_PROJECT_FOCUSED,
+             TranslatableString("action", "Cut"),
+             TranslatableString("action", "Cut"),
+             IconCode::Code::CUT
+             ),
     UiAction("copy",
              au::context::UiCtxProjectFocused,
              au::context::CTX_PROJECT_FOCUSED,
@@ -64,6 +71,20 @@ const UiActionList TrackeditUiActions::m_actions = {
              TranslatableString("action", "Delete"),
              IconCode::Code::DELETE_TANK
              ),
+    UiAction("split-cut",
+             au::context::UiCtxProjectFocused,
+             au::context::CTX_PROJECT_FOCUSED,
+             TranslatableString("action", "Split cut"),
+             TranslatableString("action", "Split cut"),
+             IconCode::Code::DELETE_TANK
+             ),
+    UiAction("split-delete",
+             au::context::UiCtxProjectFocused,
+             au::context::CTX_PROJECT_FOCUSED,
+             TranslatableString("action", "Split delete"),
+             TranslatableString("action", "Split delete"),
+             IconCode::Code::DELETE_TANK
+             ),
     UiAction("split",
              au::context::UiCtxProjectFocused,
              au::context::CTX_PROJECT_FOCUSED,
@@ -75,6 +96,24 @@ const UiActionList TrackeditUiActions::m_actions = {
              au::context::CTX_PROJECT_FOCUSED,
              TranslatableString("action", "Merge selected clips"),
              TranslatableString("action", "Merge selected clips")
+             ),
+    UiAction("undo",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "&Undo"),
+             TranslatableString("action", "Undo")
+             ),
+    UiAction("redo",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "&Redo"),
+             TranslatableString("action", "Redo")
+             ),
+    UiAction("duplicate",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Duplicate"),
+             TranslatableString("action", "Duplicate")
              ),
     // clip
     UiAction("clip-cut",
@@ -122,24 +161,6 @@ const UiActionList TrackeditUiActions::m_actions = {
              TranslatableString("action", "Delete"),
              TranslatableString("action", "Delete clip")
              ),
-    UiAction("clip-cut-close-gap",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Cut & close gap"),
-             TranslatableString("action", "Cut clip & close gap")
-             ),
-    UiAction("clip-delete-close-gap",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Delete & close gap"),
-             TranslatableString("action", "Delete clip & close gap")
-             ),
-    UiAction("clip-duplicate",
-             au::context::UiCtxAny,
-             au::context::CTX_ANY,
-             TranslatableString("action", "Duplicate clip"),
-             TranslatableString("action", "Duplicate clip")
-             ),
     UiAction("track-split",
              au::context::UiCtxAny,
              au::context::CTX_ANY,
@@ -157,6 +178,42 @@ const UiActionList TrackeditUiActions::m_actions = {
              au::context::CTX_ANY,
              TranslatableString("action", "Merge selected clips"),
              TranslatableString("action", "Merge selected clips")
+             ),
+    UiAction("duplicate-selected",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Duplicate selected"),
+             TranslatableString("action", "Duplicate selected")
+             ),
+    UiAction("duplicate-clip",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Duplicate clip"),
+             TranslatableString("action", "Duplicate clip")
+             ),
+    UiAction("clip-split-cut",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Split cut"),
+             TranslatableString("action", "Split cut")
+             ),
+    UiAction("clip-split-delete",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Split delete"),
+             TranslatableString("action", "Split delete")
+             ),
+    UiAction("split-cut-selected",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Split cut"),
+             TranslatableString("action", "Split cut")
+             ),
+    UiAction("split-delete-selected",
+             au::context::UiCtxAny,
+             au::context::CTX_ANY,
+             TranslatableString("action", "Split delete"),
+             TranslatableString("action", "Split delete")
              ),
     UiAction("clip-export",
              au::context::UiCtxAny,

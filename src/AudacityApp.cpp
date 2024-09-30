@@ -1601,8 +1601,9 @@ bool AudacityApp::InitPart2()
 
    {
       // ANSWER-ME: Why is YieldFor needed at all?
+      //Leo: allegedly it hangs on CJK input otherwise, #805
       //wxEventLoopBase::GetActive()->YieldFor(wxEVT_CATEGORY_UI|wxEVT_CATEGORY_USER_INPUT|wxEVT_CATEGORY_UNKNOWN);
-      wxEventLoopBase::GetActive()->YieldFor(wxEVT_CATEGORY_UI);
+      wxEventLoopBase::GetActive()->YieldFor(wxEVT_CATEGORY_UI | wxEVT_CATEGORY_USER_INPUT);
 
       //JKC: Would like to put module loading here.
 
@@ -1644,6 +1645,7 @@ bool AudacityApp::InitPart2()
    std::vector<wxString> failedPlugins;
    if(!playingJournal && !SkipEffectsScanAtStartup.Read())
    {
+      HideSplashScreen(true);
       auto newPlugins = PluginManager::Get().CheckPluginUpdates();
       if(!newPlugins.empty())
       {

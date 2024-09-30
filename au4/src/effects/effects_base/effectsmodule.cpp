@@ -38,20 +38,21 @@ void EffectsModule::registerExports()
     m_provider = std::make_shared<EffectsProvider>();
     m_configuration = std::make_shared<EffectsConfiguration>();
     m_actionsController = std::make_shared<EffectsActionsController>();
+    m_uiActions = std::make_shared<EffectsUiActions>(m_actionsController);
 
     ioc()->registerExport<IEffectsProvider>(moduleName(), m_provider);
     ioc()->registerExport<IEffectsConfiguration>(moduleName(), m_configuration);
     ioc()->registerExport<IEffectsViewRegister>(moduleName(), new EffectsViewRegister());
     ioc()->registerExport<IEffectsUiEngine>(moduleName(), new EffectsUiEngine());
     ioc()->registerExport<IEffectInstancesRegister>(moduleName(), new EffectInstancesRegister());
-    ioc()->registerExport<IEffectExecutionScenarion>(moduleName(), new EffectExecutionScenario());
+    ioc()->registerExport<IEffectExecutionScenario>(moduleName(), new EffectExecutionScenario());
 }
 
 void EffectsModule::resolveImports()
 {
     auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(moduleName());
     if (ar) {
-        ar->reg(std::make_shared<EffectsUiActions>());
+        ar->reg(m_uiActions);
     }
     auto ir = ioc()->resolve<muse::ui::IInteractiveUriRegister>(moduleName());
     if (ir) {
@@ -76,7 +77,7 @@ void EffectsModule::onInit(const muse::IApplication::RunMode&)
     });
 
     m_actionsController->init();
-
+    m_uiActions->init();
     m_provider->reloadEffects();
 }
 

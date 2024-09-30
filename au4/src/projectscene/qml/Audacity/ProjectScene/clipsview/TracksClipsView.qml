@@ -143,6 +143,19 @@ Rectangle {
 
             color: ui.theme.fontPrimaryColor
         }
+
+        Rectangle {
+            id: timelineSelRect
+
+            x: timeline.context.selectionStartPosition
+            width: timeline.context.selectionEndPosition - x
+
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            color: "#8EC9FF"
+            opacity: 0.2
+        }
     }
 
     Rectangle {
@@ -286,6 +299,7 @@ Rectangle {
                     canvas: content
                     trackId: model.trackId
                     isDataSelected: model.isDataSelected
+                    isTrackSelected: model.isTrackSelected
 
                     onTrackItemMousePositionChanged: function(xWithinTrack, yWithinTrack) {
                         timeline.updateCursorPosition(xWithinTrack)
@@ -317,8 +331,15 @@ Rectangle {
 
         ClipsSelection {
             id: clipsSelection
+
+            context: timeline.context
             anchors.fill: parent
-            onSelectionDraged: function(x1, x2, completed) { selectionController.onSelectionDraged(x1, x2, completed) }
+            onSelectionDraged: function(x1, x2, completed) {
+                selectionController.onSelectionDraged(x1, x2, completed)
+                if (completed) {
+                    playCursorController.seekToX(Math.min(x1, x2))
+                }
+            }
         }
 
         PlayCursor {

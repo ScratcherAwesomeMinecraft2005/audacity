@@ -35,6 +35,15 @@ void ClipsListModel::init()
         onSelectedClip(k);
     });
 
+    selectionController()->dataSelectedStartTimeChanged().onReceive(this, [this](trackedit::secs_t time) {
+        Q_UNUSED(time);
+        updateItemsMetrics();
+    });
+    selectionController()->dataSelectedEndTimeChanged().onReceive(this, [this](trackedit::secs_t time) {
+        Q_UNUSED(time);
+        updateItemsMetrics();
+    });
+
     reload();
 }
 
@@ -206,6 +215,11 @@ void ClipsListModel::updateItemsMetrics(ClipListItem* item)
     time.clipEndTime = clip.endTime;
     time.itemStartTime = std::max(clip.startTime, (m_context->frameStartTime() - cacheTime));
     time.itemEndTime = std::min(clip.endTime, (m_context->frameEndTime() + cacheTime));
+
+    if (selectionController()->isDataSelectedOnTrack(m_trackId)) {
+        time.selectionStartTime = selectionController()->dataSelectedStartTime();
+        time.selectionEndTime = selectionController()->dataSelectedEndTime();
+    }
 
     item->setTime(time);
     item->setX(m_context->timeToPosition(time.itemStartTime));
