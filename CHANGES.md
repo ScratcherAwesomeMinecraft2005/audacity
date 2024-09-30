@@ -4,7 +4,7 @@
 
 ### Tracks
 
-- [Lowered track refresh delay to 7 ms.](https://github.com/somefoolouthere/audacity/blob/master/src/TrackPanel.h#L55)
+- Lowered track refresh delay to 7 ms.
   - Note: Requires playback at a high sample rate to work reliably.
   - Warning: Short freezes may occur when moving the mouse to different panels during playback, especially in spectrogram view.
 
@@ -18,7 +18,7 @@
 
 ### Truncate Silence
 
-- [Adjusted minimum threshold to -145 dB and maximum threshold to -6 dB.](https://github.com/somefoolouthere/audacity/blob/master/src/effects/TruncSilence.h#126)
+- Adjusted minimum threshold to -145 dB and maximum threshold to -6 dB.
 
 ## Other
 
