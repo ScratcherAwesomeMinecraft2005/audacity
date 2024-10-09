@@ -19,6 +19,9 @@ Rectangle {
     property var canvas: null
     property color clipColor: "#677CE4"
     property bool clipSelected: false
+    property bool isDataSelected: false
+    property int selectionStart: 0
+    property int selectionWidth: 0
 
     property real leftVisibleMargin: 0
     property real rightVisibleMargin: 0
@@ -29,8 +32,8 @@ Rectangle {
     signal clipEndEditRequested()
 
     signal clipMoveRequested(bool completed)
-    signal clipLeftTrimRequested()
-    signal clipRightTrimRequested()
+    signal clipLeftTrimRequested(bool completed)
+    signal clipRightTrimRequested(bool completed)
 
     signal requestSelected()
     signal ratioChanged(double val)
@@ -83,6 +86,7 @@ Rectangle {
 
         onClicked: function(e) {
             contextMenuLoader.show(Qt.point(e.x, e.y), contextMenuModel.items)
+            root.requestSelected()
         }
 
         onPositionChanged: {
@@ -115,6 +119,20 @@ Rectangle {
             z: 2
 
             visible: !root.collapsed || root.hover
+
+            Rectangle {
+                id: headerSelectionRectangle
+
+                x: root.selectionStart
+                z: 0 // Ensure this is below the header content
+                width: Math.min(root.selectionWidth, header.width)
+
+                anchors.top: header.top
+                anchors.bottom: header.bottom
+
+                color: waveView.transformColor(clipColor)
+                visible: root.isDataSelected
+            }
 
             MouseArea {
                 id: headerDragArea
@@ -226,6 +244,10 @@ Rectangle {
                 onHandleMenuItem: function(itemId) {
                     contextMenuModel.handleMenuItem(itemId)
                 }
+
+                onClicked: {
+                    root.requestSelected()
+                }
             }
         }
 
@@ -299,12 +321,12 @@ Rectangle {
             root.clipEndEditRequested()
         }
 
-        onTrimLeftRequested: function() {
-            root.clipLeftTrimRequested()
+        onTrimLeftRequested: function(completed) {
+            root.clipLeftTrimRequested(completed)
         }
 
-        onTrimRightRequested: function() {
-            root.clipRightTrimRequested()
+        onTrimRightRequested: function(completed) {
+            root.clipRightTrimRequested(completed)
         }
     }
 
@@ -314,8 +336,8 @@ Rectangle {
             name: "NORMAL"
             when: !root.clipSelected && !headerDragArea.containsMouse
             PropertyChanges { target: header; color: root.clipColor }
-            PropertyChanges { target: titleLabel; color: "#ffffff"}
-            PropertyChanges { target: menuBtn; iconColor: "#ffffff"}
+            PropertyChanges { target: titleLabel; color: "#000000"}
+            PropertyChanges { target: menuBtn; iconColor: "#000000"}
         },
 
         State {

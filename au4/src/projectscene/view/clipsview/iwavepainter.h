@@ -15,8 +15,10 @@ public:
 
     struct Style {
         QColor blankBrush;
+        QColor normalBackground;
+        QColor selectedBackground;
         QColor samplePen;
-        QColor highlightedSamplePen;
+        QColor selectedSamplePen;
         QColor sampleBrush;
         QColor rmsPen;
         QColor clippedPen;
