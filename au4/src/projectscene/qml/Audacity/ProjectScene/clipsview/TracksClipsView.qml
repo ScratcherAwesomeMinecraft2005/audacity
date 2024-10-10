@@ -16,6 +16,10 @@ Rectangle {
 
     TracksListClipsModel {
         id: tracksModel
+
+        onTotalTracksHeightChanged: {
+            timeline.context.onResizeFrameContentHeight(tracksModel.totalTracksHeight)
+        }
     }
 
     ProjectPropertiesModel {
@@ -35,9 +39,7 @@ Rectangle {
     TracksViewStateModel {
         id: tracksViewState
         onTracksVericalYChanged: {
-            if (!tracksClipsView.moving) {
-                tracksClipsView.contentY = tracksViewState.tracksVericalY
-            }
+            tracksClipsView.contentY = tracksViewState.tracksVericalY
         }
     }
 
@@ -104,6 +106,8 @@ Rectangle {
         anchors.top: parent.top
         anchors.left: timelineIndent.right
         anchors.right: parent.right
+
+        clip: true
 
         height: 40
 
@@ -245,7 +249,7 @@ Rectangle {
                 anchors.fill: parent
                 clip: true
 
-                property real visibleContentHeight: tracksClipsView.contentHeight - tracksClipsView.contentY
+                property real visibleContentHeight: tracksModel.totalTracksHeight - tracksClipsView.contentY
 
                 ScrollBar.horizontal: null
                 ScrollBar.vertical: null
@@ -255,10 +259,6 @@ Rectangle {
                     timeline.context.startVerticalScrollPosition = tracksClipsView.contentY
                 }
 
-                onContentHeightChanged: {
-                    timeline.context.onResizeFrameContentHeight(tracksClipsView.contentHeight)
-                }
-
                 onHeightChanged: {
                     timeline.context.onResizeFrameHeight(tracksClipsView.height)
                 }
@@ -266,19 +266,11 @@ Rectangle {
                 Connections {
                     target: timeline.context
 
-                    function onShiftViewByY(shift) {
-                        if (shift > 0) {
-                            tracksClipsView.flick(0, tracksClipsView.maximumFlickVelocity)
-                        } else if (shift < 0) {
-                            tracksClipsView.flick(0, -tracksClipsView.maximumFlickVelocity)
-                        }
-                    }
-
                     function onViewContentYChangeRequested(contentY) {
-                        if (tracksClipsView.contentY + contentY + tracksClipsView.height > tracksClipsView.contentHeight) {
-                            tracksClipsView.contentY += tracksClipsView.contentHeight - (tracksClipsView.contentY + tracksClipsView.height)
+                        if (tracksClipsView.contentY + contentY + tracksClipsView.height > tracksModel.totalTracksHeight) {
+                            tracksClipsView.contentY += tracksModel.totalTracksHeight - (tracksClipsView.contentY + tracksClipsView.height)
                         } else if (tracksClipsView.contentY + contentY < 0) {
-                            tracksClipsView.contentY = 0 - tracksClipsView.contentY
+                            tracksClipsView.contentY = 0
                         } else {
                             tracksClipsView.contentY += contentY
                         }
