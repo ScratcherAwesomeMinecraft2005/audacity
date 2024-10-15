@@ -25,7 +25,7 @@ See a full and detailed list of Audacity 3 changes [here](https://github.com/som
 
 ## This repository is currently undergoing major structural change.
 
-Build instructions for 3.x can be found [here](https://github.com/somefoolouthere/audacity/blob/release-3.7.0/BUILDING.md).
+Build instructions for 3.x can be found [here](https://github.com/audacity/audacity/blob/release-3.7.0/BUILDING.md).
 
 ## License
 
