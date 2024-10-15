@@ -21,7 +21,7 @@ This is my own custom, personal use version of Audacity with a few small changes
 - Extended ranges for some effect parameters
 - And more...
 
-See a full and detailed list of changes [here](https://github.com/somefoolouthere/audacity/blob/master/CHANGES.md).
+See a full and detailed list of Audacity 3 changes [here](https://github.com/somefoolouthere/audacity/blob/master/AU3_CHANGES.md).
 
 ## This repository is currently undergoing major structural change.
 
