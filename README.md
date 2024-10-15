@@ -34,6 +34,13 @@ Help with using Audacity is available [here](https://audacityteam.org/help/).
 Build instructions are available [here](https://github.com/somefoolouthere/audacity/blob/master/BUILDING.md).
 
 Additional development resources may be found [here](https://audacity.gitbook.io/dev/).
+[**Audacity**](https://www.audacityteam.org) is an easy-to-use, multi-track audio editor and recorder for Windows, macOS, GNU/Linux and other operating systems. More info can be found on https://www.audacityteam.org
+
+## This repository is currently undergoing major structural change.
+
+We're currently working on Audacity 4, which means an entirely new UI and also refactorings aplenty. As such, master is currently not particularly friendly to new contributors. It still is possible to submit patches to Audacity 3.x; make sure you branch off release-3.7.x if you choose to do so. Build instructions for 3.x can be found [here](https://github.com/audacity/audacity/blob/release-3.7.0/BUILDING.md); build instructions for Audacity 4 are not available yet.
+
+You can stay updated with our efforts on [YouTube](https://youtube.com/@audacity), [discord](https://discord.gg/audacity) and [our blog](https://audacityteam.org/blog).
 
 ## License
 
